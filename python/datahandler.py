@@ -1,6 +1,8 @@
-import util
+import os
+
 from datahandler_toy import DataHandlerToy
 from datahandler_root import DataHandlerROOT
+from datahandler_h5 import DataHandlerH5
 
 class DataHandlerFactory:
     def __init__(self):
@@ -18,6 +20,7 @@ class DataHandlerFactory:
 dhFactory = DataHandlerFactory()
 dhFactory.register('toy', DataHandlerToy)
 dhFactory.register('root', DataHandlerROOT)
+dhFactory.register('hdf5', DataHandlerH5)
 
 def getDataHandler(
     filepaths, # list of str
@@ -25,22 +28,26 @@ def getDataHandler(
     variables_truth = [], # list of str
     reweighter = None,
     use_toydata = False,
+    outputname = '.',
     **kwargs
     ):
     """
     Get and load a datahandler according to the input file type
     """
 
-    #input_ext = util.getFilesExtension(filepaths)
+    input_ext = os.path.splitext(filepaths[0])[-1]
 
     if use_toydata:
         dh = dhFactory.get('toy')
         dh.load_data(filepaths)
 
-    #elif input_ext == ".root":
-    elif ".root" in filepaths[0]:
+    elif input_ext == ".root":
         # ROOT files
         dh = dhFactory.get("root", filepaths, variables_reco, variables_truth, **kwargs)
+
+    elif input_ext == ".h5":
+        # HDF5 files
+        dh = dhFactory.get("hdf5", filepaths, variables_reco, variables_truth, outputname=outputname, **kwargs)
 
     else:
         #raise ValueError(f"No data handler for files with extension {input_ext}")

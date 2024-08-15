@@ -13,6 +13,41 @@ import util
 from histogramming import calc_hist, calc_hist2d
 import FlattenedHistogram as fh
 
+def filter_filepaths(file_paths, rescale_symbol='*'):
+    """
+    Check the list of file paths and extract the weight rescale factors
+
+    Example:
+    Input:
+        file_paths = [file1.root*1,2, 0.5*file2.root, file3.root]
+        rescale_symbol = '*'
+    Return:
+        [file1.root, file2.root, file3.root], [1.2, 0.5, 1.]
+    """
+    logger.debug("Filter file paths")
+
+    fpaths_new = []
+    factors_renorm = []
+
+    for fpath in file_paths:
+        logger.debug(f" {fpath}")
+
+        f_rescale = 1.
+
+        fpath_components = fpath.split(rescale_symbol)
+        for comp in fpath_components:
+            try:
+                f_rescale *= float(comp)
+            except ValueError:
+                fpaths_new.append(comp)
+
+        factors_renorm.append(f_rescale)
+
+    assert(len(fpaths_new)==len(file_paths))
+    assert(len(fpaths_new)==len(factors_renorm))
+
+    return fpaths_new, factors_renorm
+
 # base class
 class DataHandlerBase(Mapping):
     def __init__(self):
