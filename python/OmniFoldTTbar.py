@@ -217,6 +217,7 @@ class OmniFoldTTbar():
             reweighter = data_reweighter,
             weight_type = weight_type_data,
             use_toydata = use_toydata,
+            outputname = os.path.join(self.outdir, "obs"),
             match_dR = match_dR, # For pseudo data
             odd_or_even = sel_obs
             )
@@ -228,6 +229,7 @@ class OmniFoldTTbar():
             filepaths_sig, vars_reco, vars_truth,
             weight_type = weight_type_mc,
             use_toydata = use_toydata,
+            outputname = os.path.join(self.outdir, "sig"),
             match_dR = match_dR,
             odd_or_even = sel_sig
             )
@@ -241,6 +243,7 @@ class OmniFoldTTbar():
                 filepaths_bkg, vars_reco, [],
                 weight_type = weight_type_mc,
                 use_toydata = use_toydata,
+                outputname = os.path.join(self.outdir, "bkg"),
                 odd_or_even = sel_sig
                 )
             logger.info(f"Total number of background events: {len(self.handle_bkg)}")
@@ -253,6 +256,7 @@ class OmniFoldTTbar():
                 filepaths_obsbkg, vars_reco, [],
                 weight_type = weight_type_data,
                 use_toydata = use_toydata,
+                outputname = os.path.join(self.outdir, "obsbkg"),
                 odd_or_even = sel_obs
                 )
             logger.info(f"Total number of background events mixed with data: {len(self.handle_obsbkg)}")

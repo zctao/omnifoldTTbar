@@ -4,7 +4,7 @@ import uproot
 import h5py
 import os
 
-from datahandler_base import DataHandlerBase, filter_variable_names
+from datahandler_base import DataHandlerBase, filter_filepaths, filter_variable_names
 import plotter
 
 import logging
@@ -31,41 +31,6 @@ def MeVtoGeV(array):
 
         if isObjectVar or isPartonVar:
             array[fname] /= 1000.
-
-def filter_filepaths(file_paths, rescale_symbol='*'):
-    """
-    Check the list of file paths and extract the weight rescale factors
-
-    Example:
-    Input:
-        file_paths = [file1.root*1,2, 0.5*file2.root, file3.root]
-        rescale_symbol = '*'
-    Return:
-        [file1.root, file2.root, file3.root], [1.2, 0.5, 1.]
-    """
-    logger.debug("Filter file paths")
-
-    fpaths_new = []
-    factors_renorm = []
-
-    for fpath in file_paths:
-        logger.debug(f" {fpath}")
-
-        f_rescale = 1.
-
-        fpath_components = fpath.split(rescale_symbol)
-        for comp in fpath_components:
-            try:
-                f_rescale *= float(comp)
-            except ValueError:
-                fpaths_new.append(comp)
-
-        factors_renorm.append(f_rescale)
-
-    assert(len(fpaths_new)==len(file_paths))
-    assert(len(fpaths_new)==len(factors_renorm))
-
-    return fpaths_new, factors_renorm
 
 def load_arrays(
     file_names,
@@ -664,3 +629,31 @@ class DataHandlerROOT(DataHandlerBase):
             assert(len(self.data_reco)==len(self.data_truth))
             assert(len(self.data_truth)==len(self.weights_mc))
             assert(len(self.data_truth)==len(self.pass_truth))
+
+    def __len__(self):
+        """
+        Get the number of events in the dataset.
+
+        Returns
+        -------
+        non-negative int
+        """
+        return len(self.data_reco) if self.data_reco is not None else 0
+
+    def _get_reco_arr(self, feature):
+        return self.data_reco[feature]
+
+    def _get_truth_arr(self, feature):
+        return self.data_truth[feature]
+
+    def _get_reco_keys(self):
+        return self.data_reco.dtype.names
+
+    def _get_truth_keys(self):
+        return self.data_truth.dtype.names
+
+    def _filter_reco_arr(self, selections):
+        self.data_reco = self.data_reco[selections]
+
+    def _filter_truth_arr(self, selections):
+        self.data_truth = self.data_truth[selections]
