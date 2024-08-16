@@ -111,6 +111,8 @@ class DataHandlerH5(DataHandlerBase):
             prefix_truth = treename_truth
         )
 
+        self._MeVtoGeV()
+
         ######
         # event weights
         logger.debug("Load weight arrays")
@@ -144,9 +146,29 @@ class DataHandlerH5(DataHandlerBase):
             filepaths,
             has_truth = len(variable_names_mc) > 0,
             match_dR = match_dR,
-            odd_or_even = odd_or_even,
             prefix = treename_truth
         )
+
+        # filter events based on the event numbers
+        if odd_or_even == 'odd':
+            sel_evt = self.vds["eventNumber"][:]%2 == 1
+        elif odd_or_even == 'even':
+            sel_evt = self.vds["eventNumber"][:]%2 == 0
+        elif odd_or_even is not None:
+            logger.warn(f"Unknown value for the argument 'odd_or_even': {odd_or_even}. No selection is applied.")
+            sel_evt = None
+        else:
+            sel_evt = None
+
+        if sel_evt is not None:
+            self._filter_reco_arr(sel_evt)
+            self.weights = self.weights[sel_evt]
+            self.pass_reco = self.pass_reco[sel_evt]
+
+            if self.data_truth:
+                self._filter_truth_arr(sel_evt)
+                self.weights_mc = self.weights_mc[sel_evt]
+                self.pass_truth = self.pass_truth[sel_evt]
 
         ######
         # sanity check
@@ -286,20 +308,16 @@ class DataHandlerH5(DataHandlerBase):
         filepaths,
         has_truth = False,
         match_dR = None, # float
-        odd_or_even = None, # str, 'odd', 'even'
         prefix = ''
         ):
 
         # variables for selections
-        variables_sel = ['pass_reco']
+        variables_sel = ['eventNumber', 'pass_reco']
 
         if has_truth:
             variables_sel += ['pass_truth']
             if match_dR is not None:
                 variables_sel += ['dR_thad', 'dR_tlep', 'dR_lq1', 'dR_lq2', 'dR_lep', 'dR_nu']
-
-        if odd_or_even is not None:
-            variables_sel += ['eventNumber']
 
         hadd_h5(
             filepaths,
@@ -320,19 +338,13 @@ class DataHandlerH5(DataHandlerBase):
             #match_dR_tops = self.vds["dR_thad"] < match_dR & self.vds["dR_tlep"] < match_dR
             #self.pass_truth &= match_dR_tops
 
-        ###
-        # select events based on the event numbers
-        if odd_or_even == 'odd':
-            sel_evt = self.vds["eventNumber"][:]%2 == 1
-        elif odd_or_even == 'even':
-            sel_evt = self.vds["eventNumber"][:]%2 == 0
-        elif odd_or_even is not None:
-            logger.warn(f"Unknown value for the argument 'odd_or_even': {odd_or_even}. No selection is applied.")
-            sel_evt = None
-        else:
-            sel_evt = None
+    def _MeVtoGeV(self):
+        for vname in self.data_reco:
+            if vname in ['jet_pt', 'jet_e', 'met_met', 'mwt', 'lep_pt', 'lep_m']:
+                self.data_reco[vname] = self.data_reco[vname][:] / 1000.
 
-        if sel_evt is not None:
-            self.pass_reco &= sel_evt
-            if self.pass_truth is not None:
-                self.pass_truth &= sel_evt
+        for vname in self.data_truth:
+            if vname.startswith("MC_") and (
+                vname.endswith('_pt') or vname.endswith('_m') or vname.endswith('_E') or
+                vname.endswith('_Ht') or vname.endswith('_pout') ):
+                self.data_truth[vname] = self.data_truth[vname][:] / 1000.
