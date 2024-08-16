@@ -329,6 +329,8 @@ class DataHandlerH5(DataHandlerBase):
         elif odd_or_even is not None:
             logger.warn(f"Unknown value for the argument 'odd_or_even': {odd_or_even}. No selection is applied.")
             sel_evt = None
+        else:
+            sel_evt = None
 
         if sel_evt is not None:
             self.pass_reco &= sel_evt
