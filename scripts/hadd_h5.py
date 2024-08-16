@@ -10,18 +10,11 @@ def hadd_h5(
     outputname = None,
     outputfile = None,
     padding = None,
-    verbose = False,
     prefix = ''
     ):
     """
     Concatenate multiple hdf5 files into one virtual dataset
     """
-    # configure the logger
-    if verbose:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
-
     nevents = []
 
     logger.debug("Loop over the input files to get the total number of events")
@@ -39,28 +32,27 @@ def hadd_h5(
     layout_d = {vname : None for vname in variable_names}
     nevts_tot = 0
     for ievt, infile in zip(nevents, inputfiles):
-        logger.info(ievt, infile)
+        logger.debug(f"{ievt} {infile}")
         with h5py.File(infile, 'r') as fin:
             for vname in variable_names:
                 # check if vname is an available dataset in fin
                 if vname in fin:
-                    vsource = h5py.VirtualSource(fin[vname])
+                    column_name = vname
                 elif prefix and f"{prefix}.{vname}" in fin:
-                    vsource = h5py.VirtualSource(fin[f"{prefix}.{vname}"])
+                    column_name = f"{prefix}.{vname}"
                 elif padding:
                     # Use the dataset 'padding' instead
                     logger.warning(f"No dataset {vname} in file {infile}. Use the specified dataset {padding} to fill the virtual dataset instead.")
-
                     if not padding in fin:
                         raise KeyError(f"No padding dataset {padding} either!")
-
-                    vsource = h5py.VirtualSource(fin[padding])
-
+                    column_name = padding
                 else:
                     raise KeyError(f"No dataset {vname} in file {infile}")
 
+                vsource = h5py.VirtualSource(fin[column_name])
+
                 if layout_d[vname] is None:
-                    layout_d[vname] = h5py.VirtualLayout(shape=(sum(nevents),), dtype=fin[vname].dtype)
+                    layout_d[vname] = h5py.VirtualLayout(shape=(sum(nevents),), dtype=fin[column_name].dtype)
 
                 layout_d[vname][nevts_tot:nevts_tot+ievt] = vsource
 
@@ -105,6 +97,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    logger.setLevel(logging.DEBUG)
+    # configure the logger
+    logger.setLevel(logging.DEBUG if args.verbose else logging.INFO)
 
-    hadd_h5(**vars(args))
+    hadd_h5(
+        inputfiles = args.inputfiles,
+        variable_names = args.variable_names,
+        outputname = args.outputname,
+        padding = args.padding,
+        prefix = args.prefix
+    )
