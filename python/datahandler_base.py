@@ -24,13 +24,10 @@ def filter_filepaths(file_paths, rescale_symbol='*'):
     Return:
         [file1.root, file2.root, file3.root], [1.2, 0.5, 1.]
     """
-    logger.debug("Filter file paths")
-
     fpaths_new = []
     factors_renorm = []
 
     for fpath in file_paths:
-        logger.debug(f" {fpath}")
 
         f_rescale = 1.
 
