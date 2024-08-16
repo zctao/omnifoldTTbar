@@ -148,6 +148,15 @@ class DataHandlerH5(DataHandlerBase):
             prefix = treename_truth
         )
 
+        ######
+        # sanity check
+        assert len(self) == len(self.weights)
+        assert len(self) == len(self.pass_reco)
+
+        if self.data_truth is not None:
+            assert len(self) == len(self.pass_truth)
+            assert len(self) == len(self.weights_mc)
+
     def __del__(self):
         self.vds.close()
 
@@ -156,21 +165,25 @@ class DataHandlerH5(DataHandlerBase):
         vname = list(self.vds.keys())[0]
         return len(self.vds[vname])
 
-    def _in_data_reco(self, variable):
-        if isinstance(variable, list):
-            return all([self._in_data_reco(v) for v in variable])
-        elif self.data_reco is None:
-            return False
-        else:
-            return variable in self.data_reco
+    def _get_reco_arr(self, feature):
+        return self.data_reco[feature][:]
 
-    def _in_data_truth(self, variable):
-        if isinstance(variable, list):
-            return all([self._in_data_truth(v) for v in variable])
-        elif self.data_truth is None:
-            return False
-        else:
-            return variable in self.data_truth
+    def _get_truth_arr(self, feature):
+        return self.data_truth[feature][:]
+
+    def _get_reco_keys(self):
+        return list(self.data_reco.keys())
+
+    def _get_truth_keys(self):
+        return list(self.data_truth.keys())
+
+    def _filter_reco_arr(self, selections):
+        for k in self._get_reco_keys():
+            self.data_reco[k] = self.data_reco[k][selections]
+
+    def _filter_truth_arr(self, selections):
+        for k in self._get_truth_keys():
+            self.data_truth[k] = self.data_truth[k][selections]
 
     def _load_arrays(
         self,

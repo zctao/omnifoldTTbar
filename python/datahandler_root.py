@@ -629,3 +629,31 @@ class DataHandlerROOT(DataHandlerBase):
             assert(len(self.data_reco)==len(self.data_truth))
             assert(len(self.data_truth)==len(self.weights_mc))
             assert(len(self.data_truth)==len(self.pass_truth))
+
+    def __len__(self):
+        """
+        Get the number of events in the dataset.
+
+        Returns
+        -------
+        non-negative int
+        """
+        return len(self.data_reco) if self.data_reco is not None else 0
+
+    def _get_reco_arr(self, feature):
+        return self.data_reco[feature]
+
+    def _get_truth_arr(self, feature):
+        return self.data_truth[feature]
+
+    def _get_reco_keys(self):
+        return self.data_reco.dtype.names
+
+    def _get_truth_keys(self):
+        return self.data_truth.dtype.names
+
+    def _filter_reco_arr(self, selections):
+        self.data_reco = self.data_reco[selections]
+
+    def _filter_truth_arr(self, selections):
+        self.data_truth = self.data_truth[selections]

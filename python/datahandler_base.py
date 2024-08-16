@@ -75,7 +75,25 @@ class DataHandlerBase(Mapping):
         -------
         non-negative int
         """
-        return len(self.data_reco) if self.data_reco is not None else 0
+        raise NotImplementedError
+
+    def _get_reco_arr(self, feature):
+        raise NotImplementedError
+
+    def _get_truth_arr(self, feature):
+        raise NotImplementedError
+
+    def _get_reco_keys(self):
+        raise NotImplementedError
+
+    def _get_truth_keys(self):
+        raise NotImplementedError
+
+    def _filter_reco_arr(self, selections):
+        raise NotImplementedError
+
+    def _filter_truth_arr(self, selections):
+        raise NotImplementedError
 
     def __contains__(self, variable):
         """
@@ -118,20 +136,18 @@ class DataHandlerBase(Mapping):
     def _in_data_reco(self, variable):
         if isinstance(variable, list):
             return all([self._in_data_reco(v) for v in variable])
+        elif self.data_reco is None:
+            return False
         else:
-            if self.data_reco is None:
-                return False
-            else:
-                return variable in self.data_reco.dtype.names
+            return variable in self._get_reco_keys()
 
     def _in_data_truth(self, variable):
         if isinstance(variable, list):
             return all([self._in_data_truth(v) for v in variable])
+        elif self.data_truth is None:
+            return False
         else:
-            if self.data_truth is None:
-                return False
-            else:
-                return variable in self.data_truth.dtype.names
+            return variable in self._get_truth_keys()
 
     def get_arrays(self, features, valid_only=False):
         """
@@ -179,9 +195,9 @@ class DataHandlerBase(Mapping):
             if self._in_data_reco(features): # reco level
                 # Can't index data by np Unicode arrays, have to
                 # convert back to str first.
-                return self.data_reco[str(features)]
+                return self._get_reco_arr(str(features))
             elif self._in_data_truth(features): # truth level
-                return self.data_truth[str(features)]
+                return self._get_truth_arr(str(features))
 
             # special cases
             elif '_px' in features:
@@ -223,11 +239,11 @@ class DataHandlerBase(Mapping):
         iterator of strings
         """
         if self.data_truth is None:
-            return iter(self.data_reco.dtype.names)
+            return iter(self._get_reco_keys())
         else:
             return iter(
-                list(self.data_reco.dtype.names) +
-                list(self.data_truth.dtype.names)
+                list(self._get_reco_keys()) +
+                list(self._get_truth_keys())
                 )
 
     def sum_weights(self, reco_level=True):
@@ -648,13 +664,13 @@ class DataHandlerBase(Mapping):
         # keep only events that pass all selections
         if self.data_truth is None:
             # reco only
-            self.data_reco = self.data_reco[self.pass_reco]
+            self._filter_reco_arr(self.pass_reco)
             self.weights = self.weights[self.pass_reco]
             self.pass_reco = self.pass_reco[self.pass_reco]
         else:
             pass_all = self.pass_reco & self.pass_truth
-            self.data_reco = self.data_reco[pass_all]
-            self.data_truth = self.data_truth[pass_all]
+            self._filter_reco_arr(pass_all)
+            self._filter_truth_arr(pass_all)
             self.weights = self.weights[pass_all]
             self.weights_mc = self.weights_mc[pass_all]
 
@@ -663,11 +679,11 @@ class DataHandlerBase(Mapping):
 
     def remove_events_failing_reco(self):
         if self.data_truth is not None:
-            self.data_truth = self.data_truth[self.pass_reco]
+            self._filter_truth_arr(self.pass_reco)
             self.weights_mc = self.weights_mc[self.pass_reco]
             self.pass_truth = self.pass_truth[self.pass_reco]
 
-        self.data_reco = self.data_reco[self.pass_reco]
+        self._filter_reco_arr(self.pass_reco)
         self.weights = self.weights[self.pass_reco]
         self.pass_reco = self.pass_reco[self.pass_reco]
 
@@ -675,11 +691,11 @@ class DataHandlerBase(Mapping):
         if self.data_truth is None:
             return
 
-        self.data_reco = self.data_reco[self.pass_truth]
+        self._filter_reco_arr(self.pass_truth)
         self.weights = self.weights[self.pass_truth]
         self.pass_reco = self.pass_reco[self.pass_truth]
 
-        self.data_truth = self.data_truth[self.pass_truth]
+        self._filter_truth_arr(self.pass_truth)
         self.weights_mc = self.weights_mc[self.pass_truth]
         self.pass_truth = self.pass_truth[self.pass_truth]
 
@@ -716,12 +732,12 @@ class DataHandlerBase(Mapping):
     def clear_underflow_overflow_events(self):
         notflow = ~self.is_underflow_or_overflow()
 
-        self.data_reco = self.data_reco[notflow]
+        self._filter_reco_arr(notflow)
         self.pass_reco = self.pass_reco[notflow]
         self.weights = self.weights[notflow]
 
         if self.data_truth is not None:
-            self.data_truth = self.data_truth[notflow]
+            self._filter_truth_arr(notflow)
             self.pass_truth = self.pass_truth[notflow]
             self.weights_mc = self.weights_mc[notflow]
 
