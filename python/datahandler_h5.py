@@ -174,7 +174,7 @@ class DataHandlerH5(DataHandlerBase):
         # filters
         self.event_filter = self._event_number_filter(odd_or_even)
 
-        if self.event_filter:
+        if self.event_filter is not None:
             # apply filters only to event selection flags for now
             self.pass_reco = self.pass_reco[self.event_filter]
             if self.data_truth:
@@ -375,14 +375,14 @@ class DataHandlerH5(DataHandlerBase):
         feature_arr = np.zeros(shape=arr_shape)
 
         if feature_arr.ndim == 1:
-            self._get_array(features, feature_arr)
+            self._get_array(str(features), feature_arr)
 
         else:
             for i, varname in enumerate(features):
                 self._get_array(varname, feature_arr[:,i])
 
         # event filter
-        if self.event_filter:
+        if self.event_filter is not None:
             feature_arr = feature_arr[self.event_filter]
             # Event selection flags self.pass_reco and self.pass_truth should already have the filter applied in self.__init__()
 
@@ -401,7 +401,7 @@ class DataHandlerH5(DataHandlerBase):
         w_dataset = self.weights if reco_level else self.weights_mc
 
         # event filter
-        if self.event_filter:
+        if self.event_filter is not None:
             w_arr = w_dataset[self.event_filter]
         else:
             w_arr = w_dataset[:]
@@ -436,7 +436,7 @@ class DataHandlerH5(DataHandlerBase):
         self._w_sf *= factors
 
     def _filter_events_fail_selections(self, event_sel):
-        if not self.event_filter:
+        if self.event_filter is None:
             self.event_filter = event_sel.copy()
         else:
             # event selection flags self.pass_reco and self.pass_truth should already be filtered
@@ -445,7 +445,7 @@ class DataHandlerH5(DataHandlerBase):
 
         # update event selection falgs
         self.pass_reco = self.pass_reco[event_sel]
-        if self.pass_truth:
+        if self.pass_truth is not None:
             self.pass_truth = self.pass_truth[event_sel]
 
     def remove_unmatched_events(self):

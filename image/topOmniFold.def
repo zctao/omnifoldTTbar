@@ -10,3 +10,5 @@ from: tensorflow/tensorflow:2.7.0-gpu
     pip install mplhep~=0.3.41
     pip install scikit-learn~=1.0.2
     pip install PyYAML~=6.0
+    pip install tensorflow-io~=0.23.1
+    pip install -U memory_profiler
