@@ -1,12 +1,16 @@
 import os
 import h5py
 import numpy as np
+from numpy.random import default_rng
+rng = default_rng()
 
 from datahandler_base import DataHandlerBase, filter_filepaths, filter_variable_names
 from hadd_h5 import hadd_h5
 
 import logging
 logger = logging.getLogger('datahandler_h5')
+
+weight_components = ["weight_bTagSF_DL1r_70", "weight_jvt", "weight_leptonSF", "weight_pileup", "weight_mc"]
 
 def get_dataset_h5(file_h5, name, prefix=''):
     if name in file_h5:
@@ -33,8 +37,7 @@ def get_weight_variables(weight_name_nominal, weight_type):
         # component of the nominal weights corresponding to the weight variation
         # All components of the nominal weights (hard code here for now)
         weight_comp = None
-        all_weight_components = ["weight_bTagSF_DL1r_70", "weight_jvt", "weight_leptonSF", "weight_pileup", "weight_mc"]
-        for wname in all_weight_components:
+        for wname in weight_components:
             if weight_syst.startswith(wname):
                 weight_comp = wname
                 break
@@ -44,8 +47,16 @@ def get_weight_variables(weight_name_nominal, weight_type):
 
         if weight_comp is None: # something's wrong
             raise RuntimeError(f"Unknown base component for event weight {weight_type}")
-        
+
         return weight_name_nominal, weight_syst, weight_comp
+
+def in_MeV_reco(variable_name):
+    return variable_name in ['jet_pt', 'jet_e', 'met_met', 'mwt', 'lep_pt', 'lep_m']
+
+def in_MeV_truth(variable_name):
+    isMC = variable_name.startswith("MC_")
+    isEnergy = variable_name.endswith("_pt") or variable_name.endswith("_m") or variable_name.endswith("_E") or variable_name.endswith("_Ht") or variable_name.endswith("_pout")
+    return isMC and isEnergy
 
 class DataHandlerH5(DataHandlerBase):
     """
@@ -111,13 +122,16 @@ class DataHandlerH5(DataHandlerBase):
             prefix_truth = treename_truth
         )
 
-        self._MeVtoGeV()
-
         ######
         # event weights
         logger.debug("Load weight arrays")
         self.weights = None
-        self.weights_truth = None
+        self.weights_mc = None
+
+        # reweighter
+        self._reweighter = None
+        # scale factors
+        self._w_sf = 1.
 
         if weight_type.startswith("external:"):
             # special case: load event weights from external files
@@ -130,17 +144,15 @@ class DataHandlerH5(DataHandlerBase):
         self._load_weights(
             filepaths_w,
             weight_name_nominal = weight_name_nominal,
-            weight_type = weight_type
+            weight_type = weight_type,
+            include_truth = len(variable_names_mc) > 0
         )
-
-        # for now
-        if variable_names_mc:
-            self.weights_mc = self.weights.copy()
 
         ######
         # event selection flags
         self.pass_reco = None
         self.pass_truth = None
+        self.event_filter = None
 
         self._set_event_selections(
             filepaths,
@@ -149,35 +161,24 @@ class DataHandlerH5(DataHandlerBase):
             prefix = treename_truth
         )
 
-        # filter events based on the event numbers
-        if odd_or_even == 'odd':
-            sel_evt = self.vds["eventNumber"][:]%2 == 1
-        elif odd_or_even == 'even':
-            sel_evt = self.vds["eventNumber"][:]%2 == 0
-        elif odd_or_even is not None:
-            logger.warn(f"Unknown value for the argument 'odd_or_even': {odd_or_even}. No selection is applied.")
-            sel_evt = None
-        else:
-            sel_evt = None
-
-        if sel_evt is not None:
-            self._filter_reco_arr(sel_evt)
-            self.weights = self.weights[sel_evt]
-            self.pass_reco = self.pass_reco[sel_evt]
-
-            if self.data_truth:
-                self._filter_truth_arr(sel_evt)
-                self.weights_mc = self.weights_mc[sel_evt]
-                self.pass_truth = self.pass_truth[sel_evt]
-
-        ######
-        # sanity check
+        ###
+        # check length
         assert len(self) == len(self.weights)
         assert len(self) == len(self.pass_reco)
 
-        if self.data_truth is not None:
-            assert len(self) == len(self.pass_truth)
+        if self.data_truth:
             assert len(self) == len(self.weights_mc)
+            assert len(self) == len(self.pass_truth)
+
+        ####
+        # filters
+        self.event_filter = self._event_number_filter(odd_or_even)
+
+        if self.event_filter:
+            # apply filters only to event selection flags for now
+            self.pass_reco = self.pass_reco[self.event_filter]
+            if self.data_truth:
+                self.pass_truth = self.pass_truth[self.event_filter]
 
     def __del__(self):
         self.vds.close()
@@ -187,25 +188,35 @@ class DataHandlerH5(DataHandlerBase):
         vname = list(self.vds.keys())[0]
         return len(self.vds[vname])
 
-    def _get_reco_arr(self, feature):
-        return self.data_reco[feature][:]
+    def _get_reco_arr(self, feature, outarr=None):
+        if outarr is None:
+            outarr = np.zeros(len(self))
 
-    def _get_truth_arr(self, feature):
-        return self.data_truth[feature][:]
+        outarr[:] = self.data_reco[feature][:]
+
+        # convert MeV to GeV if needed
+        if in_MeV_reco(feature):
+            outarr[:] /= 1000.
+
+        return outarr
+
+    def _get_truth_arr(self, feature, outarr=None):
+        if outarr is None:
+            outarr = np.zeros(len(self))
+
+        outarr[:] = self.data_truth[feature][:]
+
+        # convert MeV to GeV if needed
+        if in_MeV_truth(feature):
+            outarr /= 1000.
+
+        return outarr
 
     def _get_reco_keys(self):
         return list(self.data_reco.keys())
 
     def _get_truth_keys(self):
         return list(self.data_truth.keys())
-
-    def _filter_reco_arr(self, selections):
-        for k in self._get_reco_keys():
-            self.data_reco[k] = self.data_reco[k][selections]
-
-    def _filter_truth_arr(self, selections):
-        for k in self._get_truth_keys():
-            self.data_truth[k] = self.data_truth[k][selections]
 
     def _load_arrays(
         self,
@@ -236,8 +247,8 @@ class DataHandlerH5(DataHandlerBase):
         for vname in variables_reco:
             self.data_reco[vname] = get_dataset_h5(self.vds, vname, prefix_reco)
 
-        self.data_truth = {}
         if variables_truth:
+            self.data_truth = {}
             logger.debug("Load truth-level data array")
             for vname in variables_truth:
                 self.data_truth[vname] = get_dataset_h5(self.vds, vname, prefix_truth)
@@ -247,6 +258,7 @@ class DataHandlerH5(DataHandlerBase):
         filepaths,
         weight_name_nominal,
         weight_type = 'nominal',
+        include_truth = False
         ):
 
         if weight_type == 'nominal' or weight_type.startswith("external:"):
@@ -257,51 +269,30 @@ class DataHandlerH5(DataHandlerBase):
                 outputfile = self.vds
             )
 
-            self.weights = self.vds[weight_name_nominal][:]
+            self.weights = self.vds[weight_name_nominal]
 
         else: # not nominal weights
-            # Examples of expected 'weight_type':
-            # 'weight_pileup_UP' or 'weight_bTagSF_DL1r_70_eigenvars_B_up:5'
-            if len(weight_type.split(':')) > 1:
-                # The weight variation branch is a vector of float
-                weight_var, index_w = weight_type.split(':')
-                weight_syst = f"{weight_var.strip()}_{index_w.strip()}"
-            else:
-                weight_syst = weight_type
-
-            # component of the nominal weights corresponding to the weight variation
-            # All components of the nominal weights (hard code here for now)
-            weight_comp = None
-            all_weight_components = ["weight_bTagSF_DL1r_70", "weight_jvt", "weight_leptonSF", "weight_pileup", "weight_mc"]
-            for wname in all_weight_components:
-                if weight_syst.startswith(wname):
-                    weight_comp = wname
-                    break
-
-            if weight_syst == 'mc_generator_weights':
-                weight_comp = 'weight_mc'
-
-            if weight_comp is None: # something's wrong
-                raise RuntimeError(f"Unknown base component for event weight {weight_type}")
-
-            logger.debug("Concatenate event weight files to a virtual dataset")
+            wname_nom, wname_syst, wname_comp = get_weight_variables(weight_name_nominal, weight_type)
             hadd_h5(
                 filepaths,
-                variable_names = [weight_name_nominal, weight_syst, weight_comp],
-                padding = weight_name_nominal, # in case not all sub samples have the weight variables
+                variable_names = [wname_nom, wname_syst, wname_comp],
+                padding = wname_nom, # in case not all sub samples have the weight variables
                 outputfile = self.vds
             )
 
             # weights_nominal * weights_syst / weights_component
-            self.weights = self.vds[weight_name_nominal][:]
+            warr = self.vds[wname_nom][:]
+            warr *= self.vds[wname_syst]
+            np.divide(warr, self.vds[wname_comp], out=warr, where = self.vds[wname_comp][:]!=0)
 
-            warr_syst = self.vds[weight_syst][:]
-            warr_comp = self.vds[weight_comp][:]
+            # store the new weights
+            self.vds.create_dataset('weights', data=warr)
 
-            sf = np.zeros_like(self.weights, float)
-            np.divide(warr_syst, warr_comp, out = sf, where = warr_comp!=0)
+            self.weights = self.vds['weights']
 
-            self.weights *= sf
+        if include_truth:
+            # for now
+            self.weights_mc = self.weights
 
     def _set_event_selections(
         self,
@@ -311,7 +302,7 @@ class DataHandlerH5(DataHandlerBase):
         prefix = ''
         ):
 
-        # variables for selections
+        # variables relevant for event selections
         variables_sel = ['eventNumber', 'pass_reco']
 
         if has_truth:
@@ -326,8 +317,7 @@ class DataHandlerH5(DataHandlerBase):
             prefix = prefix
         )
 
-        self.pass_reco = self.vds['pass_reco'] & (self.weights != 0)
-
+        self.pass_reco = self.vds['pass_reco'][:] # & (self.weights != 0)
         self.pass_truth = self.vds['pass_truth'][:] if has_truth else None
 
         if match_dR is not None and self.pass_truth is not None:
@@ -338,13 +328,148 @@ class DataHandlerH5(DataHandlerBase):
             #match_dR_tops = self.vds["dR_thad"] < match_dR & self.vds["dR_tlep"] < match_dR
             #self.pass_truth &= match_dR_tops
 
-    def _MeVtoGeV(self):
-        for vname in self.data_reco:
-            if vname in ['jet_pt', 'jet_e', 'met_met', 'mwt', 'lep_pt', 'lep_m']:
-                self.data_reco[vname] = self.data_reco[vname][:] / 1000.
+    def _event_number_filter(self, odd_or_even):
+        if odd_or_even == 'odd':
+            return self.vds["eventNumber"][:]%2 == 1
+        elif odd_or_even == 'even':
+            return self.vds["eventNumber"][:]%2 == 0
+        elif odd_or_even is not None:
+            logger.warning(f"Unknown value for the argument 'odd_or_even': {odd_or_even}. No selection is applied.")
+            return None
+        else:
+            return None
 
-        for vname in self.data_truth:
-            if vname.startswith("MC_") and (
-                vname.endswith('_pt') or vname.endswith('_m') or vname.endswith('_E') or
-                vname.endswith('_Ht') or vname.endswith('_pout') ):
-                self.data_truth[vname] = self.data_truth[vname][:] / 1000.
+    def _get_array(self, feature, outarr=None):
+        if outarr is None:
+            outarr = np.zeros(len(self))
+
+        if self._in_data_reco(feature): # reco level
+            self._get_reco_arr(feature, outarr)
+
+        elif self._in_data_truth(feature): # truth level
+            self._get_truth_arr(feature, outarr)
+
+        # special cases
+        elif feature.endswith('px'):
+            feature_pt = feature.replace('_px', '_pt')
+            feature_phi = feature.replace('_px', '_phi')
+            # px = pt * cos(phi)
+            outarr[:] = self._get_reco_arr(feature_pt) * np.cos(self._get_reco_arr(feature_phi))
+        elif feature.endswith('py'):
+            feature_pt = feature.replace('_py', '_pt')
+            feature_phi = feature.replace('_py', '_phi')
+            # py = pt * sin(phi)
+            outarr[:] = self._get_reco_arr(feature_pt) * np.sin(self._get_reco_arr(feature_phi))
+        elif feature.endswith('pz'):
+            feature_pt = feature.replace('_pz', '_pt')
+            feature_eta = feature.replace('_pz', '_eta')
+            # pz = pt * sinh(eta)
+            outarr[:] = self._get_reco_arr(feature_pt) * np.sinh(self._get_reco_arr(feature_eta))
+        else:
+            raise RuntimeError(f"Unknown feature {feature}")
+
+        return outarr
+
+    def get_arrays(self, features, valid_only=False):
+        arr_shape = (len(self),) + np.asarray(features).shape
+        feature_arr = np.zeros(shape=arr_shape)
+
+        if feature_arr.ndim == 1:
+            self._get_array(features, feature_arr)
+
+        else:
+            for i, varname in enumerate(features):
+                self._get_array(varname, feature_arr[:,i])
+
+        # event filter
+        if self.event_filter:
+            feature_arr = feature_arr[self.event_filter]
+            # Event selection flags self.pass_reco and self.pass_truth should already have the filter applied in self.__init__()
+
+        if valid_only:
+            if self._in_data_reco(features):
+                feature_arr = feature_arr[self.pass_reco]
+            elif self._in_data_truth(features):
+                feature_arr = feature_arr[self.pass_truth]
+            else:
+                # a mixture
+                feature_arr = feature_arr[self.pass_reco & self.pass_truth]
+
+        return feature_arr
+
+    def get_weights(self, bootstrap=False, reco_level=True, valid_only=True):
+        w_dataset = self.weights if reco_level else self.weights_mc
+
+        # event filter
+        if self.event_filter:
+            w_arr = w_dataset[self.event_filter]
+        else:
+            w_arr = w_dataset[:]
+
+        if self._reweighter is not None:
+            # reweight events that pass both reco and truth level selections
+            rwtsel = self.pass_reco & self.pass_truth
+            v_arr = self.get_arrays(self._reweighter.variables, valid_only=False)[rwtsel]
+            w_arr[rwtsel] *= self._reweighter.func(v_arr)
+
+        if valid_only:
+            evtsel = self.pass_reco if reco_level else self.pass_truth
+            w_arr = w_arr[evtsel]
+
+        # rescale
+        w_arr *= self._w_sf
+
+        if bootstrap:
+            w_arr *= rng.poisson(1, size=len(w_arr))
+
+        return w_arr
+
+    def sum_weights(self, reco_level=True):
+        return self.get_weights(reco_level=reco_level, valid_only=True).sum()
+
+    def rescale_weights(self, factors=1., reweighter=None):
+        # for reweighting sample
+        if reweighter is not None:
+            self._reweighter = reweighter
+
+        # rescale
+        self._w_sf *= factors
+
+    def _filter_events_fail_selections(self, event_sel):
+        if not self.event_filter:
+            self.event_filter = event_sel.copy()
+        else:
+            # event selection flags self.pass_reco and self.pass_truth should already be filtered
+            # only update a subset of self.event_filter that corresponds to the selection flags
+            self.event_filter[self.event_filter] &= event_sel
+
+        # update event selection falgs
+        self.pass_reco = self.pass_reco[event_sel]
+        if self.pass_truth:
+            self.pass_truth = self.pass_truth[event_sel]
+
+    def remove_unmatched_events(self):
+        # set filter to remove events that do not pass all selections
+        if self.data_truth:
+            self._filter_events_fail_selections(self.pass_reco & self.pass_truth)
+        else:
+            self._filter_events_fail_selections(self.pass_reco)
+
+    def remove_events_failing_reco(self):
+        self._filter_events_fail_selections(self.pass_reco)
+
+    def remove_events_failing_truth(self):
+        if self.data_truth is None:
+            return
+
+        self._filter_events_fail_selections(self.pass_truth)
+
+    def clear_underflow_overflow_events(self):
+        notflow = not self.is_underflow_or_overflow()
+        self._filter_events_fail_selections(notflow)
+        self.reset_underflow_overflow_flags()
+
+    # Use DataHandlerBase
+    #def reset_underflow_overflow_flags(self):
+    #def update_underflow_overflow_flags(self, varnames, bins):
+    #def is_underflow_or_overflow(self):

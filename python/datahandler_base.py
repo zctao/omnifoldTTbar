@@ -727,7 +727,7 @@ class DataHandlerBase(Mapping):
         return self.underflow_overflow_reco | self.underflow_overflow_truth
 
     def clear_underflow_overflow_events(self):
-        notflow = ~self.is_underflow_or_overflow()
+        notflow = not self.is_underflow_or_overflow()
 
         self._filter_reco_arr(notflow)
         self.pass_reco = self.pass_reco[notflow]
