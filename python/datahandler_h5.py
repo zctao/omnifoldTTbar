@@ -1,8 +1,6 @@
 import os
 import h5py
 import numpy as np
-from numpy.random import default_rng
-rng = default_rng()
 
 from datahandler_base import DataHandlerBase, filter_filepaths, filter_variable_names
 from hadd_h5 import hadd_h5
@@ -128,11 +126,6 @@ class DataHandlerH5(DataHandlerBase):
         self.weights = None
         self.weights_mc = None
 
-        # reweighter
-        self._reweighter = None
-        # scale factors
-        self._w_sf = 1.
-
         if weight_type.startswith("external:"):
             # special case: load event weights from external files
             # "external:" is followed by a comma separated list of file paths
@@ -177,8 +170,10 @@ class DataHandlerH5(DataHandlerBase):
         if self.event_filter is not None:
             # apply filters only to event selection flags for now
             self.pass_reco = self.pass_reco[self.event_filter]
+            self.weights = self.weights[self.event_filter]
             if self.data_truth:
                 self.pass_truth = self.pass_truth[self.event_filter]
+                self.weights_mc = self.weights_mc[self.event_filter]
 
     def __del__(self):
         self.vds.close()
@@ -269,7 +264,7 @@ class DataHandlerH5(DataHandlerBase):
                 outputfile = self.vds
             )
 
-            self.weights = self.vds[weight_name_nominal]
+            self.weights = self.vds[weight_name_nominal][:]
 
         else: # not nominal weights
             wname_nom, wname_syst, wname_comp = get_weight_variables(weight_name_nominal, weight_type)
@@ -281,18 +276,13 @@ class DataHandlerH5(DataHandlerBase):
             )
 
             # weights_nominal * weights_syst / weights_component
-            warr = self.vds[wname_nom][:]
-            warr *= self.vds[wname_syst]
-            np.divide(warr, self.vds[wname_comp], out=warr, where = self.vds[wname_comp][:]!=0)
-
-            # store the new weights
-            self.vds.create_dataset('weights', data=warr)
-
-            self.weights = self.vds['weights']
+            self.weights = self.vds[wname_nom][:]
+            self.weights *= self.vds[wname_syst]
+            np.divide(self.weights, self.vds[wname_comp], out=self.weights, where = self.vds[wname_comp][:]!=0)
 
         if include_truth:
             # for now
-            self.weights_mc = self.weights
+            self.weights_mc = self.weights.copy()
 
     def _set_event_selections(
         self,
@@ -397,56 +387,21 @@ class DataHandlerH5(DataHandlerBase):
 
         return feature_arr
 
-    def get_weights(self, bootstrap=False, reco_level=True, valid_only=True):
-        w_dataset = self.weights if reco_level else self.weights_mc
-
-        # event filter
-        if self.event_filter is not None:
-            w_arr = w_dataset[self.event_filter]
-        else:
-            w_arr = w_dataset[:]
-
-        if self._reweighter is not None:
-            # reweight events that pass both reco and truth level selections
-            rwtsel = self.pass_reco & self.pass_truth
-            v_arr = self.get_arrays(self._reweighter.variables, valid_only=False)[rwtsel]
-            w_arr[rwtsel] *= self._reweighter.func(v_arr)
-
-        if valid_only:
-            evtsel = self.pass_reco if reco_level else self.pass_truth
-            w_arr = w_arr[evtsel]
-
-        # rescale
-        w_arr *= self._w_sf
-
-        if bootstrap:
-            w_arr *= rng.poisson(1, size=len(w_arr))
-
-        return w_arr
-
-    def sum_weights(self, reco_level=True):
-        return self.get_weights(reco_level=reco_level, valid_only=True).sum()
-
-    def rescale_weights(self, factors=1., reweighter=None):
-        # for reweighting sample
-        if reweighter is not None:
-            self._reweighter = reweighter
-
-        # rescale
-        self._w_sf *= factors
-
     def _filter_events_fail_selections(self, event_sel):
         if self.event_filter is None:
             self.event_filter = event_sel.copy()
         else:
             # event selection flags self.pass_reco and self.pass_truth should already be filtered
+            # so as self.weights and self.weights_mc
             # only update a subset of self.event_filter that corresponds to the selection flags
             self.event_filter[self.event_filter] &= event_sel
 
-        # update event selection falgs
+        # update event selection falgs and weights
         self.pass_reco = self.pass_reco[event_sel]
-        if self.pass_truth is not None:
+        self.weights = self.weights[event_sel]
+        if self.data_truth is not None:
             self.pass_truth = self.pass_truth[event_sel]
+            self.weights_mc = self.weights_mc[event_sel]
 
     def remove_unmatched_events(self):
         # set filter to remove events that do not pass all selections
