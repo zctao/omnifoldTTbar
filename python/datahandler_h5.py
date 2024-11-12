@@ -190,7 +190,7 @@ class DataHandlerH5(DataHandlerBase):
 
     def _get_reco_arr(self, feature, outarr=None):
         if outarr is None:
-            outarr = np.zeros(len(self))
+            outarr = np.zeros(len(self), dtype=np.float32)
 
         outarr[:] = self.data_reco[feature][:]
 
@@ -202,7 +202,7 @@ class DataHandlerH5(DataHandlerBase):
 
     def _get_truth_arr(self, feature, outarr=None):
         if outarr is None:
-            outarr = np.zeros(len(self))
+            outarr = np.zeros(len(self), dtype=np.float32)
 
         outarr[:] = self.data_truth[feature][:]
 
@@ -341,7 +341,7 @@ class DataHandlerH5(DataHandlerBase):
 
     def _get_array(self, feature, outarr=None):
         if outarr is None:
-            outarr = np.zeros(len(self))
+            outarr = np.zeros(len(self), dtype=np.float32)
 
         if self._in_data_reco(feature): # reco level
             self._get_reco_arr(feature, outarr)
@@ -372,7 +372,7 @@ class DataHandlerH5(DataHandlerBase):
 
     def get_arrays(self, features, valid_only=False):
         arr_shape = (len(self),) + np.asarray(features).shape
-        feature_arr = np.zeros(shape=arr_shape)
+        feature_arr = np.zeros(shape=arr_shape, dtype=np.float32)
 
         if feature_arr.ndim == 1:
             self._get_array(str(features), feature_arr)
