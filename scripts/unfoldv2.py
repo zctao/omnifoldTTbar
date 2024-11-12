@@ -313,11 +313,11 @@ def getArgsParser(arguments_list=None, print_help=False):
 
     # for backward compatibility
     if args.nresamples is not None:
-        logger.warn("The argument '--nresamples' is superceded by '--nruns'")
+        logger.warning("The argument '--nresamples' is superceded by '--nruns'")
         args.nruns = args.nresamples + 1
 
     if args.error_type is not None:
-        logger.warn("The argument '--error-type' is superceded by '--resample-data'")
+        logger.warning("The argument '--error-type' is superceded by '--resample-data'")
         if args.error_type == 'bootstrap_full':
             args.resample_data = True
             args.resample_everyrun = True
@@ -325,7 +325,7 @@ def getArgsParser(arguments_list=None, print_help=False):
             args.resample_data = False
 
     if args.dummy_value is not None:
-        logger.warn("The argument '--dummy-value <xx>' is superceded by '--correct-acceptance'")
+        logger.warning("The argument '--dummy-value <xx>' is superceded by '--correct-acceptance'")
         args.correct_acceptance = True
 
     if args.weight_type is not None and args.weight_mc is None:

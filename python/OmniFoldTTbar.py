@@ -196,7 +196,7 @@ class OmniFoldTTbar():
         elif filepaths_obs and not filepaths_sig:
             # special case: only filepaths_obs is provided
             # use odd events as obs and even events as sig
-            logger.warn("Only file paths of data events are provide. Use events with odd event number as data and events with even event number as simulation.")
+            logger.warning("Only file paths of data events are provide. Use events with odd event number as data and events with even event number as simulation.")
             filepaths_sig = filepaths_obs
             sel_obs = 'odd'
             sel_sig = 'even'
@@ -204,7 +204,7 @@ class OmniFoldTTbar():
             # special case: only filepaths_sig is provided
             # use odd events as sig and even events as obs
             filepaths_obs = filepaths_sig
-            logger.warn("Only file paths of signal events are provide. Use events with even event number as data and events with odd event number as simulation.")
+            logger.warning("Only file paths of signal events are provide. Use events with even event number as data and events with odd event number as simulation.")
             sel_obs = 'even'
             sel_sig = 'odd'
 
