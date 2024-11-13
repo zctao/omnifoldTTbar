@@ -73,7 +73,9 @@ def omnifold(
     # Model training parameters
     batch_size=256,
     epochs=100,
-    verbose=1
+    verbose=1,
+    output_dataset=None, # hdf5 dataset for storing the event weights
+    run_index=0
     ):
     """
     OmniFold
@@ -137,11 +139,14 @@ def omnifold(
     ################
     # Start iterations
     # Weights
-    weights_push = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_sim)))
-    weights_pull = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_gen)))
+    weights_push = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_sim)), dtype=np.float32)
+    weights_pull = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_gen)), dtype=np.float32)
 
-    weights_unfold = np.empty(shape=(modelUtils.n_models_in_parallel, niterations, np.count_nonzero(passcut_gen)))
-    # shape: (modelUtils.n_models_in_parallel, n_iterations, n_events[passcut_gen])
+    if output_dataset is None:
+        weights_unfold = np.empty(shape=(modelUtils.n_models_in_parallel, niterations, np.count_nonzero(passcut_gen)), dtype=np.float32)
+        # shape: (modelUtils.n_models_in_parallel, n_iterations, n_events[passcut_gen])
+    #else:
+        # write directly to output_dataset[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :]
 
     reportGPUMemUsage(logger)
 
@@ -266,8 +271,12 @@ def omnifold(
         weights_push /= np.mean(weights_push, axis=1)[:,None]
 
         # save truth level weights of this iteration
-        weights_unfold[:,i,:] = weights_push[:, passcut_gen]
-        reportGPUMemUsage(logger)
+        if output_dataset is None:
+            weights_unfold[:,i,:] = weights_push[:, passcut_gen]
+        else:
+            output_dataset[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :] = weights_push[:, passcut_gen]
+
+        #reportGPUMemUsage(logger)
         gc.collect()
 
     # end of iteration loop
@@ -295,4 +304,5 @@ def omnifold(
         fig_step2.savefig(figname_input2_ratio)
         plt.close(fig_step2)
 
-    return weights_unfold
+    if output_dataset is None:
+        return weights_unfold

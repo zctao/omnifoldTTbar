@@ -488,7 +488,7 @@ class OmniFoldTTbar():
                 w_data, w_sim, w_gen, w_bkg = self._get_event_weights(resample_data=resample_data, resample_mc=resample_mc)
 
             # omnifold
-            self.unfolded_weights[ir*modelUtils.n_models_in_parallel:(ir+1)*modelUtils.n_models_in_parallel,:,:] = omnifold(
+            omnifold(
                 X_data, X_sim, X_gen, X_bkg,
                 w_data, w_sim, w_gen, w_bkg,
                 passcut_sim, passcut_gen,
@@ -503,6 +503,8 @@ class OmniFoldTTbar():
                 batch_size = batch_size,
                 feature_names_sim = self.varnames_reco,
                 feature_names_gen = self.varnames_truth,
+                output_dataset = self.unfolded_weights,
+                run_index = ir
             )
 
             if plot_status:
