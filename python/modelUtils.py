@@ -41,6 +41,9 @@ def configGPUs(gpu=None, limit_gpu_mem=False, verbose=0):
             tf.config.experimental.set_memory_growth(g,True)
 
 def reportGPUMemUsage(logger):
+    if logger.level > logging.DEBUG:
+        return
+
     gpus = tf.config.experimental.list_logical_devices('GPU')
 
     for device in gpus:
