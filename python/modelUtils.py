@@ -254,13 +254,18 @@ def train_model(model, X, Y, w, callbacks=[], figname='', batch_size=32768, epoc
 
     # prepare the dictionaries
     with tf.device("CPU"):
+        X_train = tf.convert_to_tensor(X_train)
+        X_val = tf.convert_to_tensor(X_val)
+        Y_train = tf.convert_to_tensor(Y_train)
+        Y_val = tf.convert_to_tensor(Y_val)
+
         for i in range(n_models_in_parallel):
             w_train, w_val = train_test_split(w[i], random_state=random_state)
 
-            train_dictionary[_layer_name(i, "input")] = tf.convert_to_tensor(X_train)
-            val_dictionary[_layer_name(i, "input")] = tf.convert_to_tensor(X_val)
-            train_y_dictionary[_layer_name(i, "output")] = tf.convert_to_tensor(Y_train)
-            val_y_dictionary[_layer_name(i, "output")] = tf.convert_to_tensor(Y_val)
+            train_dictionary[_layer_name(i, "input")] = X_train
+            val_dictionary[_layer_name(i, "input")] = X_val
+            train_y_dictionary[_layer_name(i, "output")] = Y_train
+            val_y_dictionary[_layer_name(i, "output")] = Y_val
             train_w.append(tf.convert_to_tensor(w_train))
             val_w.append(tf.convert_to_tensor(w_val))
 
