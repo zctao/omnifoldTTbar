@@ -52,7 +52,7 @@ def read_weights_from_npz(filepaths_weights):
     return weights
 
 def standardize_arrays(*arrays):
-    x = np.concatenate(arrays)
+    x = np.concatenate(arrays) if len(arrays) > 1 else arrays[0]
     xmean = np.mean(x, axis=0)
     xstd = np.std(x, axis=0)
 
@@ -63,7 +63,7 @@ def standardize_arrays(*arrays):
     return arrays
 
 def minmax_arrays(*arrays):
-    x = np.concatenate(arrays)
+    x = np.concatenate(arrays) if len(arrays) > 1 else arrays[0]
     xmin = x.min(axis=0)
     xmax = x.max(axis=0)
 

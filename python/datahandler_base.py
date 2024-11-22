@@ -64,6 +64,9 @@ class DataHandlerBase(Mapping):
         self.underflow_overflow_reco = False
         self.underflow_overflow_truth = False
 
+        # scale factors for fluctuating event weights
+        self.sf_bs = None
+
     def __len__(self):
         """
         Get the number of events in the dataset.
