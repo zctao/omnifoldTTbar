@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.model_selection import KFold
-from sklearn.utils import shuffle
 import hist
 
 import modelUtils
@@ -186,8 +185,6 @@ def train_and_reweight(
 
     # background to be subtracted from target
     if X_bkg is not None:
-        # shuffle background
-        X_bkg, w_bkg = shuffle(X_bkg, w_bkg)
         w_bkg = check_weights(w_bkg, nevents = len(X_bkg))
 
     # plot input variable ratios
@@ -242,7 +239,7 @@ def train_and_reweight(
 
         i_source_gen = kf.split(X_source)
         i_target_gen = kf.split(X_target)
-        i_bkg_gen = kf.split(X_bkg) if X_bkg is not None else None
+        i_bkg_gen = kf.split(X_bkg, shuffle=True) if X_bkg is not None else None
 
         if i_bkg_gen is None:
             index_gen_zip = zip(i_source_gen, i_target_gen)
