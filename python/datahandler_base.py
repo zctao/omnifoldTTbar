@@ -339,12 +339,18 @@ class DataHandlerBase(Mapping):
             weights = self.weights_mc.copy()
             sel = self.pass_truth
 
-        if valid_only:
-            weights = weights[sel]
-
         # bootstrap
         if bootstrap:
-            weights *= rng.poisson(1, size=len(weights))
+            # generate new weights only if reco_level or none has been generated before
+            # this is to ensure the truth-level weights are fluctuated exactly the same  as the reco-level one
+            if reco_level or self.sf_bs is None:
+                # fluctuate event weights
+                self.sf_bs = rng.poisson(1, size=len(weights))
+
+            weights *= self.sf_bs
+
+        if valid_only:
+            weights = weights[sel]
 
         return weights
 

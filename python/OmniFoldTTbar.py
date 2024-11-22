@@ -351,11 +351,7 @@ class OmniFoldTTbar():
 
         # signal simulation
         # reco level
-        wsim = self.handle_sig.get_weights(valid_only=False)
-
-        if resample_mc:
-            w_bsmc = rng.poisson(1, size=len(wsim))
-            wsim *= w_bsmc
+        wsim = self.handle_sig.get_weights(bootstrap=resample_mc, valid_only=False)
 
         if standardize:
             # rescale by the same factor as data
@@ -366,11 +362,9 @@ class OmniFoldTTbar():
             #wsim /= wmean_sim
 
         # truth level
-        wgen = self.handle_sig.get_weights(valid_only=False, reco_level=False)
-
-        if resample_mc:
-            # use the same resampling weights
-            wgen *= w_bsmc
+        wgen = self.handle_sig.get_weights(bootstrap=resample_mc, valid_only=False, reco_level=False)
+        # reset the internal bootstraping scale factors
+        self.handle_sig.sf_bs = None
 
         if standardize:
             # rescale by the same factor as data
