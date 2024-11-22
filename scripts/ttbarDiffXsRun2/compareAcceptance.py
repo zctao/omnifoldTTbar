@@ -2,7 +2,7 @@
 import os
 
 import util
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 from FlattenedHistogram import FlattenedHistogram2D, FlattenedHistogram3D
 

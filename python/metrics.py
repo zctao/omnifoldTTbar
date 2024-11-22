@@ -6,7 +6,7 @@ from scipy import stats
 
 import plotter
 from util import prepend_arrays
-from histogramming import get_values_and_errors
+from histUtils import get_values_and_errors
 
 def _compute_metrics_wrt_ref(
         metrics_algo,

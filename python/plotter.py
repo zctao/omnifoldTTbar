@@ -12,7 +12,7 @@ from numpy.random import default_rng
 rng = default_rng()
 
 import util
-import histogramming as myhu
+import histUtils as myhu
 
 import logging
 logger = logging.getLogger('plotter')

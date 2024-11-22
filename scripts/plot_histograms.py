@@ -4,7 +4,7 @@ import os
 import util
 import plotter
 import metrics
-import histogramming as myhu
+import histUtils as myhu
 
 import logging
 logger = logging.getLogger("plot_histograms")

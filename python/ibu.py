@@ -1,6 +1,6 @@
 import numpy as np
 
-import histogramming as myhu
+import histUtils as myhu
 import make_histograms as mh
 from ttbarDiffXsRun2.binnedCorrections import apply_acceptance_correction, apply_efficiency_correction
 

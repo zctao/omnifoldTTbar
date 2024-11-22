@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 from scipy import stats
 
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 import util
 

@@ -12,7 +12,7 @@ import util
 from util import configRootLogger, expandFilePath, read_dict_from_json
 from util import get_bins, write_chi2, write_ks, write_triangular_discriminators, ks_2samp_weighted
 import plotting
-from histogramming import calc_hist
+from histUtils import calc_hist
 import logging
 
 def get_training_inputs(variables, dataHandle, simHandle):

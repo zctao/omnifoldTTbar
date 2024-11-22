@@ -2,7 +2,7 @@ import os
 import logging
 
 import util
-import histogramming as myhu
+import histUtils as myhu
 import FlattenedHistogram as fh
 from ttbarDiffXsRun2.plotDiffXs import plot_diffXs_1D, plot_diffXs_2D, plot_diffXs_3D, rescale_oom
 from ttbarDiffXsRun2.helpers import ttbar_diffXs_run2_params

@@ -4,7 +4,7 @@ import hist
 
 import modelUtils
 from modelUtils import get_model, get_callbacks, train_model
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 
 import logging

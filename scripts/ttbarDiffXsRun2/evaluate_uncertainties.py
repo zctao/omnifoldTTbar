@@ -2,7 +2,7 @@
 import os
 import numpy as np
 
-import histogramming as myhu
+import histUtils as myhu
 import util
 import FlattenedHistogram as fh
 from ttbarDiffXsRun2.plot_uncertainties import plot_uncertainties_from_dict

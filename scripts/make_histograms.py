@@ -5,7 +5,7 @@ import tracemalloc
 
 import util
 import metrics
-import histogramming as myhu
+import histUtils as myhu
 from OmniFoldTTbar import read_arguments, load_unfolder
 import ibu
 from plot_histograms import plot_histograms_from_dict

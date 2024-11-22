@@ -10,7 +10,7 @@ from numpy.random import default_rng
 rng = default_rng()
 
 import util
-from histogramming import calc_hist, calc_hist2d
+from histUtils import calc_hist, calc_hist2d
 import FlattenedHistogram as fh
 
 def filter_filepaths(file_paths, rescale_symbol='*'):

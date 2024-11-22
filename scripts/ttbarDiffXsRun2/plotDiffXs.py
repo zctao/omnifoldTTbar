@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 import util
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines

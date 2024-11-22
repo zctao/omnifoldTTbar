@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 
 import plotter
-import histogramming as myhu
+import histUtils as myhu
 
 def plot_unfold_iterations(
     fname_histograms,

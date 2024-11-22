@@ -1,6 +1,6 @@
 import os
 
-import histogramming as myhu
+import histUtils as myhu
 
 import logging
 logger = logging.getLogger("collectHistograms")

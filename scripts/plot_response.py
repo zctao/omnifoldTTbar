@@ -4,7 +4,7 @@ import argparse
 
 import util
 from datahandler import getDataHandler
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 
 parser = argparse.ArgumentParser()

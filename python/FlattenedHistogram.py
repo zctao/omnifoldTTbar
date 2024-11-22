@@ -3,7 +3,7 @@ import copy
 import hist
 import numpy as np
 
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 
 import logging

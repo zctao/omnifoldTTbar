@@ -1,6 +1,6 @@
 import os
 
-import histogramming as myhu
+import histUtils as myhu
 import plotter
 import util
 from metrics import compute_Chi2, compute_Delta

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import plotter
-import histogramming as myhu
+import histUtils as myhu
 
 def plot_bin_Y_vs_X(
         figname,

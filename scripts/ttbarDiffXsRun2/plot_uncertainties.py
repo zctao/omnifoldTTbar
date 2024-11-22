@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import util
 import plotter
-import histogramming as myhu
+import histUtils as myhu
 import FlattenedHistogram as fh
 
 # systematic uncertainties

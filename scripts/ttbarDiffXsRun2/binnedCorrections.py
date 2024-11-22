@@ -4,7 +4,7 @@ Module to handle binned corrections
 import os
 import time
 
-import histogramming as myhu
+import histUtils as myhu
 import FlattenedHistogram as fh
 import util
 from datahandler_root import DataHandlerROOT

@@ -7,7 +7,7 @@ from copy import copy
 import util
 import plotter
 import reweight
-import histogramming as myhu
+import histUtils as myhu
 import FlattenedHistogram as fh
 from datahandler import getDataHandler
 
