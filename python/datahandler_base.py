@@ -146,6 +146,18 @@ class DataHandlerBase(Mapping):
         else:
             return variable in self._get_truth_keys()
 
+    def get_entries(self, reco_level=True, valid_only=True):
+        if reco_level:
+            if valid_only:
+                return np.count_nonzero(self.pass_reco)
+            else:
+                return len(self.pass_reco)
+        else:
+            if valid_only:
+                return np.count_nonzero(self.pass_truth)
+            else:
+                return len(self.pass_truth)
+
     def get_arrays(self, features, valid_only=False):
         """
         Retrieve features from each event in the dataset.
