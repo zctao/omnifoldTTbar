@@ -34,7 +34,7 @@ def hadd_h5(
     for ievt, infile in zip(nevents, inputfiles):
         logger.debug(f"{ievt} {infile}")
         with h5py.File(infile, 'r') as fin:
-            for vname in variable_names:
+            for vname in layout_d:
                 # check if vname is an available dataset in fin
                 if vname in fin:
                     column_name = vname
