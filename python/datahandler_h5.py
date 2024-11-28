@@ -18,9 +18,9 @@ def get_dataset_h5(file_h5, name, prefix=''):
     else:
         raise RuntimeError(f"Cannot find variable {name} in the dataset")
 
-def get_weight_variables(weight_name_nominal, weight_type):
+def get_weight_variables(weight_type):
     if weight_type == 'nominal' or weight_type.startswith("external:"):
-        return weight_name_nominal, None, None
+        return None, None
 
     else: # not nominal weights
         # Examples of expected 'weight_type':
@@ -46,7 +46,7 @@ def get_weight_variables(weight_name_nominal, weight_type):
         if weight_comp is None: # something's wrong
             raise RuntimeError(f"Unknown base component for event weight {weight_type}")
 
-        return weight_name_nominal, weight_syst, weight_comp
+        return weight_syst, weight_comp
 
 def in_MeV_reco(variable_name):
     return variable_name in ['jet_pt', 'jet_e', 'met_met', 'mwt', 'lep_pt', 'lep_m']
@@ -135,15 +135,17 @@ class DataHandlerH5(DataHandlerBase):
             # load event weights from the same files as data arrays
             filepaths_w = filepaths_clean
 
+        include_reco = len(variable_names) > 0
         include_truth = len(variable_names_mc) > 0
         self._load_weights(
             filepaths_w,
-            weight_name_nominal = weight_name_nominal,
+            weight_name_nominal = weight_name_nominal if include_reco else None,
             weight_name_nominal_mc = weight_name_nominal_mc if include_truth else None,
             weight_type = weight_type
         )
         # FIXME replicate the old behavior for now
-        self.weights_mc = self.weights.copy()
+        if self.weights is not None:
+            self.weights_mc = self.weights.copy()
 
         ######
         # event selection flags
@@ -153,6 +155,7 @@ class DataHandlerH5(DataHandlerBase):
 
         self._set_event_selections(
             filepaths,
+            has_reco = len(variable_names) > 0,
             has_truth = len(variable_names_mc) > 0,
             match_dR = match_dR,
             prefix = treename_truth
@@ -220,7 +223,7 @@ class DataHandlerH5(DataHandlerBase):
     def _load_arrays(
         self,
         filepaths,
-        variables_reco,
+        variables_reco=[],
         variables_truth=[],
         prefix_reco='',
         prefix_truth=''
@@ -230,9 +233,14 @@ class DataHandlerH5(DataHandlerBase):
         logger.debug(f"Concatenate data arrays from hdf5 files into a virtual dataset")
 
         # variables
-        variables_reco = filter_variable_names(variables_reco)
+        if variables_reco:
+            variables_reco = filter_variable_names(variables_reco)
         if variables_truth:
             variables_truth = filter_variable_names(variables_truth)
+
+        if not variables_reco and not variables_truth:
+            logger.warning("No variables to load. Aborting!")
+            return
 
         hadd_h5(
             filepaths,
@@ -255,16 +263,22 @@ class DataHandlerH5(DataHandlerBase):
     def _load_weights(
         self,
         filepaths,
-        weight_name_nominal,
+        weight_name_nominal = None,
         weight_name_nominal_mc = None,
         weight_type = 'nominal'
         ):
 
         if weight_type == 'nominal' or weight_type.startswith("external:"):
             logger.debug("Concatenate event weight files to a virtual dataset")
-            varnames_weights = [weight_name_nominal]
+            varnames_weights = []
+            if weight_name_nominal is not None:
+                varnames_weights.append(weight_name_nominal)
             if weight_name_nominal_mc is not None:
                 varnames_weights.append(weight_name_nominal_mc)
+
+            if not varnames_weights:
+                logger.warning("No weight variables to load. Aborting!")
+                return
 
             hadd_h5(
                 filepaths,
@@ -272,27 +286,36 @@ class DataHandlerH5(DataHandlerBase):
                 outputfile = self.vds
             )
 
-            self.weights = self.vds[weight_name_nominal][:]
+            if weight_name_nominal is not None:
+                self.weights = self.vds[weight_name_nominal][:]
 
             if weight_name_nominal_mc is not None: # MC truth level weights
                 self.weights_mc = self.vds[weight_name_nominal_mc][:]
 
         else: # not nominal weights
-            wname_nom, wname_syst, wname_comp = get_weight_variables(weight_name_nominal, weight_type)
+            wname_syst, wname_comp = get_weight_variables(weight_type)
+
+            varnames_weights = list(filter(None, [weight_name_nominal, weight_name_nominal_mc, wname_syst, wname_comp]))
+
+            if not varnames_weights:
+                logger.warning("No weight variables to load. Aborting!")
+                return
+
             hadd_h5(
                 filepaths,
-                variable_names = [wname_nom, wname_syst, wname_comp],
-                padding = wname_nom, # in case not all sub samples have the weight variables
+                variable_names = varnames_weights,
+                padding = weight_name_nominal, # in case not all sub samples have the weight variables
                 outputfile = self.vds
             )
 
             # weights_nominal * weights_syst / weights_component
-            self.weights = self.vds[wname_nom][:]
-            self.weights *= self.vds[wname_syst]
-            np.divide(self.weights, self.vds[wname_comp], out=self.weights, where = self.vds[wname_comp][:]!=0)
+            if weight_name_nominal is not None:
+                self.weights = self.vds[weight_name_nominal][:]
+                self.weights *= self.vds[wname_syst]
+                np.divide(self.weights, self.vds[wname_comp], out=self.weights, where = self.vds[wname_comp][:]!=0)
 
             if weight_name_nominal_mc is not None: # MC truth level weights
-                self.weights_mc = self.vds[wname_nom][:]
+                self.weights_mc = self.vds[weight_name_nominal_mc][:]
                 # only need to vary truth level weights if generator systematics
                 if wname_comp == 'weight_mc':
                     self.weights_mc *= self.vds[wname_syst]
@@ -301,13 +324,17 @@ class DataHandlerH5(DataHandlerBase):
     def _set_event_selections(
         self,
         filepaths,
+        has_reco = True,
         has_truth = False,
         match_dR = None, # float
         prefix = ''
         ):
 
         # variables relevant for event selections
-        variables_sel = ['eventNumber', 'pass_reco']
+        variables_sel = ['eventNumber']
+
+        if has_reco:
+            variables_sel += ['pass_reco']
 
         if has_truth:
             variables_sel += ['pass_truth']
@@ -321,7 +348,7 @@ class DataHandlerH5(DataHandlerBase):
             prefix = prefix
         )
 
-        self.pass_reco = self.vds['pass_reco'][:] # & (self.weights != 0)
+        self.pass_reco = self.vds['pass_reco'][:] if has_reco else None # & (self.weights != 0)
         self.pass_truth = self.vds['pass_truth'][:] if has_truth else None
 
         if match_dR is not None and self.pass_truth is not None:
