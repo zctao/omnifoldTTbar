@@ -10,7 +10,7 @@ from numpy.random import default_rng
 rng = default_rng()
 
 import util
-from histUtils import calc_hist, calc_hist2d
+from histUtils import calc_hist, calc_histnd
 import FlattenedHistogram as fh
 
 def filter_filepaths(file_paths, rescale_symbol='*'):
@@ -399,71 +399,122 @@ class DataHandlerBase(Mapping):
 
         return cor_df
 
-    def get_histogram(self, variable, bin_edges, weights=None, density=False, norm=None, absoluteValue=False, extra_cuts=None, bootstrap=False):
+    def compute_histogram(self, variables, bins, weights=None, density=False, norm=None, absoluteValue=False, extra_cuts=None, bootstrap=False):
         """
-        Retrieve the histogram of a weighted variable in the dataset.
+        Compute a histogram of weighted variable in the dataset
 
         Parameters
         ----------
-        variable : str
-            Name of the variable in the dataset to histogram.
-        weights : array-like of shape (nevents,) or (nweights, nevents) or None
-            Array of per-event weights. If 2D, then a sequence of different
-            per-event weightings. If None, use self.weights or self.weights_mc
-        bin_edges : array-like of shape (nbins + 1,)
-            Locations of the edges of the bins of the histogram.
-        density : bool
+        variables : str or list of str
+            Name(s) of the variable(s) in the dataset to histogram
+        bins : 1D array-like, a tuple/list of 1D array-like, or a dictionary
+            Binning configurations of the histograms
+        weights : array-like. Default None
+            Array of per-event weights. The lowest dimension is of shape (nevents,). The outer dimensions determines the dimension of the retured array of histograms. If None, retrieve weights from the dataset.
+        density : bool. Default False
             If True, normalize the histogram by bin widths
-        norm : float, default None
+        norm : float. Default None
             If not None, rescale the histogram to norm
-        absoluteValue : bool
-            If True, fill the histogram with the absolute value
-        extra_cuts : array-like of shape (nevents,) of bool, default None
-            An array of flags to select events that are included in filling the histogram
-        bootstrap : bool, default: False
-            Multiply each weight by a random value drawn from a Poisson
-            distribution with lambda = 1.
+        absoluteValue : bool or a list of bool. Default False
+            If True, fill the histogram with the absolute value. If a list, the number of elements needs to match the number of variables
+        extra_cuts : array-like of shape (nevents,) of bool. Default None
+            If not None, used as filters to select a subset of events for filling the histograms
+        bootstrap : bool. Default False
+            If True, multiply each weight by a random value drawn from a Poisson
+            distribution with mean of one.
 
         Returns
         -------
-        A Hist object if `weights` is 1D, a list of Hist objects if `weights` 
-            is 2D.
+        A histogram object or an array of histogram objects. The return shape is determined based on the outer dimensions of the weights array.
+        If bins is an integer or a 1D array, the returned histograms are 1D hist.Hist.
+        If bins is a tuple/list of an integer or array, the returned histograms are 2D/3D/...D hist.Hist
+        If bins is a dictionary, the returned histograms are fh.FlattenedHistogram2D or fh.FlattenedHistogram3D
         """
+        if isinstance(variables, str):
+            variables = [variables]
+
+        have_reco = any([self._in_data_reco(v) for v in variables])
+        have_truth = any([self._in_data_truth(v) for v in variables])
+
+        # event filters
+        sel = True
+        if have_reco:
+            sel &= self.pass_reco
+        if have_truth:
+            sel &= self.pass_truth
+
+        if extra_cuts is not None: # additional filters
+            sel &= extra_cuts
+
+        # weights
         if weights is None:
-            if self._in_data_truth(variable): # mc truth level
-                weights = self.get_weights(reco_level=False)
-            else: # reco level
-                weights = self.get_weights(reco_level=True)
+            weights = self.get_weights(bootstrap=False, reco_level=have_reco, valid_only=False)[sel]
 
-        if isinstance(weights, np.ndarray):
-            if weights.ndim == 1: # if weights is a 1D array
-                # make histogram with valid events
-                varr = self[variable]
-                if absoluteValue:
-                    varr = np.abs(varr)
-                assert(len(varr) == len(weights))
+        if np.asarray(weights).ndim > 1:
+            # call compute_histogram recursively with the inner dimensions
+            return [self.compute_histogram(
+                        variables, bins, wgts,
+                        density=density,
+                        norm=norm,
+                        absoluteValue=absoluteValue,
+                        extra_cuts=extra_cuts,
+                        bootstrap=bootstrap
+                        )
+                    for wgts in weights ]
 
-                if bootstrap:
-                    weights = weights * rng.poisson(1, size=len(weights))
+        # weights.ndim == 1
+        # in case the provided weights are not yet filtered
+        if len(weights) == len(sel) and not all(sel):
+            weights = weights[sel]
 
-                if extra_cuts is not None: # filter events
-                    assert(len(varr) == len(extra_cuts))
-                    return calc_hist(varr[extra_cuts], weights=weights[extra_cuts], bins=bin_edges, density=density, norm=norm)
-                else:
-                    return calc_hist(varr, weights=weights, bins=bin_edges, density=density, norm=norm)
+        if bootstrap:
+            weights *= rng.poisson(1, size=len(weights))
 
-            elif weights.ndim == 2: # make the 2D array into a list of 1D array
-                return self.get_histogram(variable, bin_edges=bin_edges, weights=list(weights), density=density, norm=norm, absoluteValue=absoluteValue, extra_cuts=extra_cuts)
+        # data arrays
+        if not isinstance(absoluteValue, list):
+            absoluteValue = [absoluteValue] * len(variables)
+
+        varr_list = []
+        for vname, absolute in zip(variables, absoluteValue):
+            varr = self.get_arrays(vname, valid_only=False)[sel]
+            if absolute:
+                varr = np.abs(varr)
+            assert len(varr) == len(weights)
+            varr_list.append(varr)
+
+        common_args = {'weights': weights, 'density': density, 'norm': norm}
+
+        # make histogram
+        if not isinstance(bins, dict):
+            if len(varr_list) == 1:
+                # check if bins is an integer or 1D array
+                assert np.isscalar(bins) or np.asarray(bins).ndim==1
+                return calc_hist(varr_list[0], bins=bins, **common_args)
             else:
-                raise RuntimeError("Only 1D or 2D array or a list of 1D array of weights can be processed.")
-        elif isinstance(weights, list): # if weights is a list of 1D array
-            hists = []
-            for w in weights:
-                h = self.get_histogram(variable, bin_edges=bin_edges, weights=w, density=density, norm=norm, absoluteValue=absoluteValue, extra_cuts=extra_cuts)
-                hists.append(h)
-            return hists
+                assert all([np.isscalar(b) or np.asarray(b).ndim==1 for b in bins])
+                return calc_histnd(*varr_list, bins=bins, **common_args)
         else:
-            raise RuntimeError("Unknown type of weights: {}".format(type(weights)))
+            # fh.FlattenedHistogram
+            if len(varr_list) == 2:
+                return fh.FlattenedHistogram2D.calc_hists(*varr_list, binning_d=bins, **common_args)
+            elif len(varr_list) == 3:
+                return fh.FlattenedHistogram3D.calc_hists(*varr_list, binning_d=bins, **common_args)
+            else:
+                raise RuntimeError(f"Unsupported number of variables for FlattenedHistogram")
+
+    def get_histogram(self, variable, bin_edges, weights=None, density=False, norm=None, absoluteValue=False, extra_cuts=None, bootstrap=False):
+        """
+        For backward compatibility
+        """
+        return self.compute_histogram(
+            variable,
+            bin_edges,
+            weights=weights,
+            density=density,
+            norm=norm,
+            absoluteValue=absoluteValue,
+            extra_cuts=extra_cuts,
+            bootstrap=bootstrap)
 
     def get_histogram2d(
         self,
@@ -478,37 +529,16 @@ class DataHandlerBase(Mapping):
         bootstrap=False
         ):
         """
-
+        For backward compatibility
         """
-        varr_x = self.get_arrays(variable_x, valid_only=False)
-        sel_x = self.pass_truth if self._in_data_truth(variable_x) else self.pass_reco
-
-        varr_y = self.get_arrays(variable_y, valid_only=False)
-        sel_y = self.pass_truth if self._in_data_truth(variable_y) else self.pass_reco
-
-        sel = sel_x & sel_y
-        varr_x = varr_x[sel]
-        varr_y = varr_y[sel]
-
-        if absoluteValue_x:
-            varr_x = np.abs(varr_x)
-
-        if absoluteValue_y:
-            varr_y = np.abs(varr_y)
-
-        if weights is None:
-            w = self.get_weights(reco_level=True, valid_only=False)
-            w = w[sel]
-        elif len(weights) == len(sel):
-            w = weights[sel]
-
-        assert(len(varr_x) == len(w))
-        assert(len(varr_y) == len(w))
-
-        if bootstrap:
-            w = w * rng.poisson(1, size=len(weights))
-
-        return calc_hist2d(varr_x, varr_y, bins=(bins_x, bins_y), weights=w, density=density)
+        return self.compute_histogram(
+            [variable_x, variable_y],
+            [bins_x, bins_y],
+            weights=weights,
+            density=density,
+            absoluteValue=[absoluteValue_x, absoluteValue_y],
+            bootstrap=bootstrap
+        )
 
     def get_response(
         self,
@@ -525,10 +555,10 @@ class DataHandlerBase(Mapping):
         elif not self._in_data_truth(variable_truth):
             raise ValueError(f"Array for variable {variable_truth} not available")
         else:
-            response = self.get_histogram2d(
-                variable_reco, variable_truth,
-                bins_reco, bins_truth,
-                absoluteValue_x=absoluteValue, absoluteValue_y=absoluteValue
+            response = self.compute_histogram(
+                [variable_reco, variable_truth],
+                [bins_reco, bins_truth],
+                absoluteValue = absoluteValue
             )
 
             if normalize_truthbins:
@@ -546,79 +576,26 @@ class DataHandlerBase(Mapping):
         self,
         variables, # list of str
         bins_dict,
-        weights = None,
+        weights=None,
         density=False,
         norm=None,
         absoluteValues=False,
         extra_cuts=None,
         bootstrap=False
         ):
-
-        if not isinstance(absoluteValues, list):
-            absoluteValues = [absoluteValues] * len(variables)
-
-        data_arrs = [
-            np.abs(self[vname]) if absolute else self[vname]
-              for vname, absolute in zip(variables, absoluteValues)
-            ]
-
-        if weights is None:
-            if all([self._in_data_truth(v) for v in variables]): # mc truth level
-                weights = self.get_weights(reco_level=False)
-            else: # reco level
-                weights = self.get_weights(reco_level=True)
-
-        weights = np.asarray(weights)
-
-        if weights.ndim == 1: # 1D array
-
-            for arr in data_arrs:
-                assert(len(arr)==len(weights))
-
-            if bootstrap:
-                weights = weights * rng.poisson(1, size=len(weights))
-
-            if extra_cuts is not None: # filter events
-                for arr in data_arrs:
-                    assert(len(arr)==len(extra_cuts))
-
-                data_arrs = [arr[extra_cuts] for arr in data_arrs]
-                weights = weights[extra_cuts]
-
-            if len(variables) == 2:
-                return fh.FlattenedHistogram2D.calc_hists(
-                    *data_arrs,
-                    binning_d = bins_dict,
-                    weights=weights,
-                    norm=norm,
-                    density=density
-                    )
-            elif len(variables) == 3:
-                return fh.FlattenedHistogram3D.calc_hists(
-                    *data_arrs,
-                    binning_d = bins_dict,
-                    weights=weights,
-                    norm=norm,
-                    density=density
-                    )
-            else:
-                raise RuntimeError(f"Dimension {len(variables)} flattened histograms currently not supported")
-        elif weights.ndim == 2: # 2D array
-            hists = []
-            for warr in weights:
-                hists.append(
-                    self.get_histograms_flattened(
-                        variables,
-                        bins_dict,
-                        warr,
-                        density=density,
-                        norm=norm,
-                        absoluteValues=absoluteValues,
-                        extra_cuts=extra_cuts
-                    )
-                )
-        else:
-            raise RuntimeError("Only 1D or 2D array or a list of 1D array of weights can be processed.")
+        """
+        For backward compatibility
+        """
+        return self.compute_histogram(
+            variables,
+            bins_dict,
+            weights=weights,
+            density=density,
+            norm=norm,
+            absoluteValue=absoluteValues,
+            extra_cuts=extra_cuts,
+            bootstrap=bootstrap
+        )
 
     def get_response_flattened(
         self,
