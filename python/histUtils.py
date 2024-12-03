@@ -81,16 +81,23 @@ def renormalize_hist(h, norm=1., density=False, flow=True):
 def read_histogram_at_locations(locations, hist_to_read):
     return np.array([ hist_to_read[hist.loc(x)].value for x in locations ])
 
-def calc_hist(data, bins=10, weights=None, density=False, norm=None, check_flow=True):
+def convert_to_bin_edges(bins, array=None):
     if np.ndim(bins) == 1: # an array
         bin_edges = np.asarray(bins)
     elif np.ndim(bins) == 0: # integer
-        xmin = np.asarray(data).min()
-        xmax = np.asarray(data).max()
-        if xmin == xmax:
-            xmin -= 0.5
-            xmax += 0.5
-        bin_edges = np.linspace(xmin, xmax, bins+1)
+        vmin = np.asarray(array).min()
+        vmax = np.asarray(array).max()
+        if vmin == vmax:
+            vmin -= 0.5
+            vmax += 0.5
+        bin_edges = np.linspace(vmin, vmax, bins+1)
+    else:
+        raise RuntimeError(f"Unsupported binning: {bins}")
+
+    return bin_edges
+
+def calc_hist(data, bins=10, weights=None, density=False, norm=None, check_flow=True):
+    bin_edges = convert_to_bin_edges(bins, array=data)
 
     h = Hist(hist.axis.Variable(bin_edges), storage=hist.storage.Weight())
     h.fill(data, weight=weights)
@@ -108,22 +115,29 @@ def calc_hist(data, bins=10, weights=None, density=False, norm=None, check_flow=
 
     return h
 
-def calc_hist2d(data_x, data_y, bins, weights=None, density=False, norm=None, check_flow=True):
-    h2d = Hist(hist.axis.Variable(bins[0]), hist.axis.Variable(bins[1]), storage=hist.storage.Weight())
-    h2d.fill(data_x, data_y, weight=weights)
+def calc_histnd(data_list, bins_list, weights=None, density=False, norm=None, check_flow=True):
+    axes = [ hist.axis.Variable(convert_to_bin_edges(bins, array=data)) for data, bins in zip(data_list, bins_list) ]
+    hNd = Hist(*axes, storage=hist.storage.Weight())
+    hNd.fill(*data_list, weight=weights)
 
     if check_flow:
-        # TODO: check_hist2d_flow(h2d)
+        # TODO: check_histNd_flow(hNd)
         pass
 
     if density:
         # normalize by bin widths
-        h2d /= get_hist_widths(h2d)
+        hNd /= get_hist_widths(hNd)
 
     if norm is not None:
-        h2d = renormalize_hist(h2d, norm=norm, density=density, flow=True)
+        hNd = renormalize_hist(hNd, norm=norm, density=density, flow=True)
 
-    return h2d
+    return hNd
+
+def calc_hist2d(data_x, data_y, bins, weights=None, density=False, norm=None, check_flow=True):
+    return calc_histnd([data_x, data_y], bins, weights=weights, density=density, norm=norm, check_flow=check_flow)
+
+def calc_hist3d(data_x, data_y, data_z, bins, weights=None, density=False, norm=None, check_flow=True):
+    return calc_histnd([data_x, data_y, data_z], bins, weights=weights, density=density, norm=norm, check_flow=check_flow)
 
 def set_hist_contents(histograms, contents):
     #TODO: underflow and overflow?
