@@ -547,7 +547,8 @@ class DataHandlerBase(Mapping):
         bins_reco,
         bins_truth,
         absoluteValue=False,
-        normalize_truthbins=True
+        normalize_truthbins=True,
+        weights = None,
         ):
 
         if not self._in_data_reco(variable_reco):
@@ -558,7 +559,8 @@ class DataHandlerBase(Mapping):
             response = self.compute_histogram(
                 [variable_reco, variable_truth],
                 [bins_reco, bins_truth],
-                absoluteValue = absoluteValue
+                absoluteValue = absoluteValue,
+                weights = weights
             )
 
             if normalize_truthbins:
@@ -604,7 +606,8 @@ class DataHandlerBase(Mapping):
         bins_reco_dict,
         bins_truth_dict,
         absoluteValues=False,
-        normalize_truthbins=True
+        normalize_truthbins=True,
+        weights = None
         ):
 
         if not isinstance(absoluteValues, list):
@@ -645,8 +648,12 @@ class DataHandlerBase(Mapping):
 
             data_arr_truth.append(varr_truth)
 
-        weight_arr = self.get_weights(reco_level=True, valid_only=False)
-        weight_arr = weight_arr[passall]
+        if weights is None:
+            weight_arr = self.get_weights(reco_level=True, valid_only=False)
+            weight_arr = weight_arr[passall]
+        else:
+            assert len(weights) == len(passall)
+            weight_arr = weights[passall]
 
         fh_response.fill(data_arr_reco, data_arr_truth, weight=weight_arr)
 
