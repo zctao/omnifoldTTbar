@@ -56,6 +56,18 @@ def in_MeV_truth(variable_name):
     isEnergy = variable_name.endswith("_pt") or variable_name.endswith("_m") or variable_name.endswith("_E") or variable_name.endswith("_Ht") or variable_name.endswith("_pout")
     return isMC and isEnergy
 
+def check_keys_in_dataset(keys, f_h5, prefix=''):
+    allexist = True
+    for k in keys:
+        if k in f_h5:
+            continue
+        elif prefix and f"{prefix}.{k}" in f_h5:
+            continue
+        else:
+            logger.info("Key not found: {k}!")
+            allexist = False
+    return allexist
+
 class DataHandlerH5(DataHandlerBase):
     """
     Load data from hdf5 files
@@ -90,6 +102,7 @@ class DataHandlerH5(DataHandlerBase):
         match_dR = None, # float
         plot_dir = None, # str
         odd_or_even = None, #str, 'odd', 'even'
+        use_existing_vds = False # if True, use the existing virtual dataset if available
         ):
 
         super().__init__()
@@ -107,8 +120,12 @@ class DataHandlerH5(DataHandlerBase):
             outputname = outputname.strip('_')+'_vds.h5'
 
         # concatenate multiple h5 files into a virtual dataset
-        logger.debug(f"Create virtual dataset file: {outputname}")
-        self.vds = h5py.File(outputname, 'w')
+        if os.path.exists(outputname) and use_existing_vds:
+            logger.info(f"Read existing virtual dataset file: {outputname}")
+            self.vds = h5py.File(outputname, 'r')
+        else:
+            logger.info(f"Create virtual dataset file: {outputname}")
+            self.vds = h5py.File(outputname, 'w')
 
         self.data_reco = None
         self.data_truth = None
@@ -154,7 +171,7 @@ class DataHandlerH5(DataHandlerBase):
         self.event_filter = None
 
         self._set_event_selections(
-            filepaths,
+            filepaths_clean,
             has_reco = len(variable_names) > 0,
             has_truth = len(variable_names_mc) > 0,
             match_dR = match_dR,
@@ -228,9 +245,7 @@ class DataHandlerH5(DataHandlerBase):
         prefix_reco='',
         prefix_truth=''
         ):
-
-        # concatenate multiple h5 files into a virtual dataset
-        logger.debug(f"Concatenate data arrays from hdf5 files into a virtual dataset")
+        logger.debug(f"Load data arrays from hdf5 files")
 
         # variables
         if variables_reco:
@@ -242,12 +257,18 @@ class DataHandlerH5(DataHandlerBase):
             logger.warning("No variables to load. Aborting!")
             return
 
-        hadd_h5(
-            filepaths,
-            variable_names = variables_reco + variables_truth,
-            outputfile = self.vds,
-            prefix = prefix_truth
-        )
+        if self.vds.mode == 'r': # readonly mode
+            logger.debug("Load data arrays from existing dataset")
+            assert check_keys_in_dataset(variables_reco + variables_truth, self.vds, prefix_truth)
+        else:
+            # concatenate multiple h5 files into a virtual dataset
+            logger.debug(f"Concatenate data arrays from hdf5 files into a virtual dataset")
+            hadd_h5(
+                filepaths,
+                variable_names = variables_reco + variables_truth,
+                outputfile = self.vds,
+                prefix = prefix_truth
+            )
 
         self.data_reco = {}
         logger.debug("Load reco-level data array")
@@ -269,7 +290,6 @@ class DataHandlerH5(DataHandlerBase):
         ):
 
         if weight_type == 'nominal' or weight_type.startswith("external:"):
-            logger.debug("Concatenate event weight files to a virtual dataset")
             varnames_weights = []
             if weight_name_nominal is not None:
                 varnames_weights.append(weight_name_nominal)
@@ -280,11 +300,16 @@ class DataHandlerH5(DataHandlerBase):
                 logger.warning("No weight variables to load. Aborting!")
                 return
 
-            hadd_h5(
-                filepaths,
-                variable_names = varnames_weights,
-                outputfile = self.vds
-            )
+            if self.vds.mode == 'r': # readonly mode
+                logger.debug("Load event weight from existing dataset")
+                assert check_keys_in_dataset(varnames_weights, self.vds)
+            else:
+                logger.debug("Concatenate event weight files to a virtual dataset")
+                hadd_h5(
+                    filepaths,
+                    variable_names = varnames_weights,
+                    outputfile = self.vds
+                )
 
             if weight_name_nominal is not None:
                 self.weights = self.vds[weight_name_nominal][:]
@@ -301,12 +326,17 @@ class DataHandlerH5(DataHandlerBase):
                 logger.warning("No weight variables to load. Aborting!")
                 return
 
-            hadd_h5(
-                filepaths,
-                variable_names = varnames_weights,
-                padding = weight_name_nominal, # in case not all sub samples have the weight variables
-                outputfile = self.vds
-            )
+            if self.vds.mode == 'r': # readonly mode
+                logger.debug("Load event weight from existing dataset")
+                assert check_keys_in_dataset(varnames_weights, self.vds)
+            else:
+                logger.debug("Concatenate event weight files to a virtual dataset")
+                hadd_h5(
+                    filepaths,
+                    variable_names = varnames_weights,
+                    padding = weight_name_nominal, # in case not all sub samples have the weight variables
+                    outputfile = self.vds
+                )
 
             # weights_nominal * weights_syst / weights_component
             if weight_name_nominal is not None:
@@ -341,12 +371,16 @@ class DataHandlerH5(DataHandlerBase):
             if match_dR is not None:
                 variables_sel += ['dR_thad', 'dR_tlep', 'dR_lq1', 'dR_lq2', 'dR_lep', 'dR_nu']
 
-        hadd_h5(
-            filepaths,
-            variable_names = variables_sel,
-            outputfile = self.vds,
-            prefix = prefix
-        )
+        if self.vds.mode == 'r': # readonly mode
+            logger.debug("Load data arrays from existing dataset")
+            assert check_keys_in_dataset(variables_sel, self.vds, prefix)
+        else:
+            hadd_h5(
+                filepaths,
+                variable_names = variables_sel,
+                outputfile = self.vds,
+                prefix = prefix
+            )
 
         self.pass_reco = self.vds['pass_reco'][:] if has_reco else None # & (self.weights != 0)
         self.pass_truth = self.vds['pass_truth'][:] if has_truth else None
