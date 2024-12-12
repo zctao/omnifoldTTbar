@@ -8,7 +8,7 @@ import util
 import plotter
 import reweight
 from OmniFoldTTbar import init_unfolder
-from make_histograms import make_histograms_from_unfolder
+from make_histogramsv2 import make_histograms_from_unfolder, load_unmatched_datahandler
 import modelUtils
 import lrscheduler
 
@@ -166,6 +166,18 @@ def unfold(**parsed_args):
     obsConfig_d = util.read_dict_from_json(parsed_args['observable_config'])
 
     if parsed_args['binning_config']:
+        # unmatched signal events for binned efficiency corrections if needed
+        if unfolder.with_efficiency_correction:
+            dh_sig_um = None # no longer need binned efficiency corrections
+        else:
+            dh_sig_um = load_unmatched_datahandler(
+                filepaths_unmatched = [], # guess file names from 'signal'
+                vnames_truth = [obsConfig_d[obs]['branch_mc'] for obs in all_observables],
+                outputdir = parsed_args['outputdir'],
+                weight_type = parsed_args.get("weight_mc", 'nominal'),
+                filepaths_signal = parsed_args['signal']
+            )
+
         make_histograms_from_unfolder(
             unfolder,
             parsed_args['binning_config'],
@@ -173,7 +185,8 @@ def unfold(**parsed_args):
             obsConfig_d = obsConfig_d,
             include_ibu = parsed_args['run_ibu'],
             compute_metrics = True,
-            plot_verbosity = parsed_args['plot_verbosity']
+            plot_verbosity = parsed_args['plot_verbosity'],
+            handle_unmatched = dh_sig_um
             )
 
     t_result_stop = time.time()

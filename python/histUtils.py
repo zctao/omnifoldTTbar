@@ -141,9 +141,8 @@ def calc_hist3d(data_x, data_y, data_z, bins, weights=None, density=False, norm=
 
 def set_hist_contents(histograms, contents):
     #TODO: underflow and overflow?
-    # histograms: hist  object or a list of hist objects
+    # histograms: hist object or a list of hist objects
     # contents: a ndarray or a list/array of arrays
-    assert(len(np.asarray(histograms)) == len(contents))
     if isinstance(histograms, list):
         for h, c in zip(histograms, contents):
             set_hist_contents(h, c)
@@ -154,7 +153,6 @@ def set_hist_errors(histograms, errors):
     #TODO: underflow and overflow?
     # histograms: hist object or a list of hist objects
     # errors: a ndarray or a list/array of arrays
-    assert(len(np.asarray(histograms)) == len(errors))
     if isinstance(histograms, list):
         for h, err in zip(histograms, errors):
             set_hist_errors(h, err)

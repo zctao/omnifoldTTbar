@@ -473,6 +473,8 @@ class DataHandlerBase(Mapping):
         # data arrays
         if not isinstance(absoluteValue, list):
             absoluteValue = [absoluteValue] * len(variables)
+        elif len(absoluteValue) == 1:
+            absoluteValue = absoluteValue * len(variables)
 
         varr_list = []
         for vname, absolute in zip(variables, absoluteValue):
@@ -492,7 +494,7 @@ class DataHandlerBase(Mapping):
                 return calc_hist(varr_list[0], bins=bins, **common_args)
             else:
                 assert all([np.isscalar(b) or np.asarray(b).ndim==1 for b in bins])
-                return calc_histnd(*varr_list, bins=bins, **common_args)
+                return calc_histnd(varr_list, bins_list=bins, **common_args)
         else:
             # fh.FlattenedHistogram
             if len(varr_list) == 2:
@@ -550,6 +552,14 @@ class DataHandlerBase(Mapping):
         normalize_truthbins=True,
         weights = None,
         ):
+
+        if isinstance(variable_reco, list):
+            assert len(variable_reco) == 1
+            variable_reco = variable_reco[0]
+
+        if isinstance(variable_truth, list):
+            assert len(variable_truth) == 1
+            variable_truth = variable_truth[0]
 
         if not self._in_data_reco(variable_reco):
             raise ValueError(f"Array for variable {variable_reco} not available")
