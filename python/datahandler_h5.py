@@ -180,8 +180,9 @@ class DataHandlerH5(DataHandlerBase):
 
         ###
         # check length
-        assert len(self) == len(self.weights)
-        assert len(self) == len(self.pass_reco)
+        if self.data_reco:
+            assert len(self) == len(self.weights)
+            assert len(self) == len(self.pass_reco)
 
         if self.data_truth:
             assert len(self) == len(self.weights_mc)
