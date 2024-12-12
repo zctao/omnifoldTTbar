@@ -481,7 +481,13 @@ def compute_unfolding_stat_uncertainty(
     if save_allruns:
         histograms_obs_d['unfolded_allruns'] = hists_unfolded_allruns
 
-    # TODO bin correlations?
+    # bin correlations
+    if isinstance(h_std_err, fh.FlattenedHistogram):
+        # flatten them first
+        hists_unfolded_allruns_flat = [fh.flatten() for fh in hists_unfolded_allruns]
+        histograms_obs_d['unfolded_correlation'] = histUtils.get_bin_correlations_from_hists(hists_unfolded_allruns_flat)
+    else:
+        histograms_obs_d['unfolded_correlation'] = histUtils.get_bin_correlations_from_hists(hists_unfolded_allruns)
 
 def compute_unfolded_distributions_ibu(
     histograms_obs_d,
