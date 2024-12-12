@@ -192,8 +192,12 @@ def compute_binned_acceptance(
     ):
     # denominator: all valid events at the reco level
     if not 'reco_sig' in histograms_obs_d:
-        logger.error("Denominator 'reco_sig' not available for computing acceptance!")
-        return histograms_obs_d
+        compute_reco_distributions(
+            variable_reco, bins_reco,
+            datahandler_sig = datahandler,
+            absoluteValue = absoluteValue,
+            histograms_obs_d = histograms_obs_d
+        )
 
     h_acc_denom = histograms_obs_d['reco_sig']
 
@@ -220,8 +224,12 @@ def compute_binned_acceptance_noflow(
     ):
     # denominator: all valid events at the reco level
     if not 'reco_sig' in histograms_obs_d:
-        logger.error("Denominator 'reco_sig' not available for computing acceptance!")
-        return histograms_obs_d
+        compute_reco_distributions(
+            variable_reco, bins_reco,
+            datahandler_sig = datahandler,
+            absoluteValue = absoluteValue,
+            histograms_obs_d = histograms_obs_d
+        )
 
     h_acc_denom = histograms_obs_d['reco_sig']
 
@@ -355,48 +363,52 @@ def compute_binned_corrections(
     datahandler_unmatched,
     absoluteValue = False,
     histograms_obs_d = {},
+    compute_acceptance = True,
+    compute_efficiency = True,
     include_noflow = False
     ):
 
     # acceptance
-    logger.debug(f" binned acceptance corrections")
-    compute_binned_acceptance(
-        variable_reco, bins_reco,
-        datahandler = datahandler,
-        absoluteValue = absoluteValue,
-        histograms_obs_d = histograms_obs_d
-    )
-
-    if include_noflow:
-        logger.debug(f" binned acceptance corrections (excluding overflow/underflow)")
-        compute_binned_acceptance_noflow(
-            variable_reco, variable_truth,
-            bins_reco, bins_truth,
+    if compute_acceptance:
+        logger.debug(f" binned acceptance corrections")
+        compute_binned_acceptance(
+            variable_reco, bins_reco,
             datahandler = datahandler,
             absoluteValue = absoluteValue,
             histograms_obs_d = histograms_obs_d
         )
 
-    # efficiency
-    logger.debug(f" binned efficiency corrections")
-    compute_binned_efficiency(
-        variable_truth, bins_truth,
-        datahandler = datahandler,
-        datahandler_unmatched =  datahandler_unmatched,
-        absoluteValue = absoluteValue,
-        histograms_obs_d = histograms_obs_d
-    )
+        if include_noflow:
+            logger.debug(f" binned acceptance corrections (excluding overflow/underflow)")
+            compute_binned_acceptance_noflow(
+                variable_reco, variable_truth,
+                bins_reco, bins_truth,
+                datahandler = datahandler,
+                absoluteValue = absoluteValue,
+                histograms_obs_d = histograms_obs_d
+            )
 
-    if include_noflow:
-        logger.debug(f" binned efficiency corrections (excluding overflow/underflow)")
-        compute_binned_efficiency_noflow(
-            variable_reco, variable_truth,
-            bins_reco, bins_truth,
+    # efficiency
+    if compute_efficiency:
+        logger.debug(f" binned efficiency corrections")
+        compute_binned_efficiency(
+            variable_truth, bins_truth,
             datahandler = datahandler,
             datahandler_unmatched =  datahandler_unmatched,
             absoluteValue = absoluteValue,
             histograms_obs_d = histograms_obs_d
         )
+
+        if include_noflow:
+            logger.debug(f" binned efficiency corrections (excluding overflow/underflow)")
+            compute_binned_efficiency_noflow(
+                variable_reco, variable_truth,
+                bins_reco, bins_truth,
+                datahandler = datahandler,
+                datahandler_unmatched =  datahandler_unmatched,
+                absoluteValue = absoluteValue,
+                histograms_obs_d = histograms_obs_d
+            )
 
 def compute_unfolded_distributions(
     variables,
@@ -526,7 +538,12 @@ def compute_unfolded_distributions_ibu(
 
     # apply acceptance and/or efficiency corrections if needed
     acceptance = histograms_obs_d.get('acceptance') if correct_acceptance else None
+    if correct_acceptance and acceptance is None:
+        logger.warning("IBU: requested to apply acceptace corrections, but acceptance corrections are not available!")
+
     efficiency = histograms_obs_d.get('efficiency') if correct_efficiency else None
+    if correct_efficiency and efficiency is None:
+        logger.warning("IBU: requested to apply efficiency corrections, but efficiency corrections are not available")
 
     # run unfolding
     hists_ibu_alliters , bin_corr_ibu_alliters = ibu.run_ibu_from_histograms(
@@ -549,8 +566,8 @@ def compute_unfolded_distributions_ibu(
 def compute_differential_xsections(
     histograms_obs_d,
     histname_unfolded,
-    acceptance_corrected = False,
-    efficiency_corrected = False,
+    acceptance_corrected = True,
+    efficiency_corrected = True,
     suffix = ""
     ):
     logger.debug(" Differential cross-sections")
@@ -561,19 +578,20 @@ def compute_differential_xsections(
 
     histname_corrected = f"{histname_unfolded}_corrected"
 
-    if acceptance_corrected:
-        logger.warning("Acceptance correction cannot be applied at this stage!")
-        logger.warning("The differential cross-sections will be produced without acceptance corrections.")
-    
-    if efficiency_corrected:
-        # keep a copy of the intermediate step
-        histograms_obs_d[histname_corrected] = histograms_obs_d[histname_unfolded].copy()
-    elif 'efficiency' in histograms_obs_d:
-        # apply efficiency corrections
-        histograms_obs_d[histname_corrected] = apply_efficiency_correction(histograms_obs_d[histname_unfolded], histograms_obs_d['efficiency'])
+    if not acceptance_corrected:
+        logger.warning("Acceptance correction has not been applied.")
+        # nothing can be done at this stage
+
+    if not efficiency_corrected:
+        if 'efficiency' in histograms_obs_d:
+            # apply efficiency corrections
+            histograms_obs_d[histname_corrected] = apply_efficiency_correction(histograms_obs_d[histname_unfolded], histograms_obs_d['efficiency'])
+        else:
+            logger.warning("Efficiency correction is not available!")
+            # still make a copy for now
+            histograms_obs_d[histname_corrected] = histograms_obs_d[histname_unfolded].copy()
     else:
-        logger.error("Efficiency correction is not available.")
-        return histograms_obs_d
+        histograms_obs_d[histname_corrected] = histograms_obs_d[histname_unfolded].copy()
 
     # compute differential cross-sections
     # absolute differential cross-sections
@@ -648,7 +666,7 @@ def evaluate_metrics(
 def apply_efficiency_correction(histogram, h_efficiency):
     if isinstance(histogram, list):
         return [ apply_efficiency_correction(hh, h_efficiency) for hh in histogram ]
-    elif isinstance(histogram, fh.FlattenedHistogram)
+    elif isinstance(histogram, fh.FlattenedHistogram):
         return histogram.divide(h_efficiency)
     else:
         # In case the correction histogram has a different binning
@@ -690,7 +708,7 @@ def make_histograms_from_unfolder(
 
     # control flags
     #all_runs = nruns is None # if number of runs is explicitly specified, no need to include all runs
-    #include_reco = True
+    include_reco = True
     all_iterations = compute_metrics or plot_verbosity >= 2
     all_histograms = compute_metrics or plot_verbosity >= 2
 
@@ -734,21 +752,22 @@ def make_histograms_from_unfolder(
         # absolute values
         isAbsolute = ["_abs" in ob for ob in obs_list]
 
-         ###
+        ###
         # reco level
-        compute_reco_distributions(
-            vnames_reco, bins_reco,
-            datahandler_sig = dh_sig,
-            datahandler_data = dh_obs,
-            datahandler_bkg = dh_bkg,
-            #datahandler_databkg = dh_obsbkg, FIXME
-            absoluteValue = isAbsolute,
-            histograms_obs_d = histograms_d[obs]
-        )
+        if include_reco:
+            compute_reco_distributions(
+                vnames_reco, bins_reco,
+                datahandler_sig = dh_sig,
+                datahandler_data = dh_obs,
+                datahandler_bkg = dh_bkg,
+                #datahandler_databkg = dh_obsbkg, FIXME
+                absoluteValue = isAbsolute,
+                histograms_obs_d = histograms_d[obs]
+            )
 
         ###
         # truth level
-        truth_known = dh_obs.data_truth is not None
+        truth_known = dh_obs is not None and dh_obs.data_truth is not None
         compute_truth_distributions(
             vnames_truth, bins_truth,
             datahandler_sig = dh_sig,
@@ -787,6 +806,8 @@ def make_histograms_from_unfolder(
             datahandler_unmatched = dh_sig_um,
             absoluteValue = isAbsolute,
             histograms_obs_d = histograms_d[obs],
+            compute_acceptance = unfolder.with_acceptance_correction,
+            compute_efficiency = dh_sig_um is not None,
             include_noflow = True
         )
 
@@ -812,12 +833,17 @@ def make_histograms_from_unfolder(
         )
 
         # differential cross-sections
-        compute_differential_xsections(
-            histograms_obs_d = histograms_d[obs],
-            histname_unfolded = 'unfolded',
-            acceptance_corrected = unfolder.with_acceptance_correction,
-            efficiency_corrected = unfolder.with_efficiency_correction
-        )
+        # only compute diff. Xs if acceptance corrections have been applied 
+        # and efficiency corrections either have been applied or are available
+        # and it is possible to compute efficiency corrections if they have not been applied yet
+        compute_diffXs = unfolder.with_acceptance_correction and (unfolder.with_efficiency_correction or "efficiency" in histograms_d[obs])
+        if compute_diffXs:
+            compute_differential_xsections(
+                histograms_obs_d = histograms_d[obs],
+                histname_unfolded = 'unfolded',
+                acceptance_corrected = unfolder.with_acceptance_correction,
+                efficiency_corrected = unfolder.with_efficiency_correction
+            )
 
         ###
         # ibu
@@ -839,13 +865,16 @@ def make_histograms_from_unfolder(
                 save_alliterations = all_iterations,
             )
 
-            compute_differential_xsections(
-                histograms_obs_d = histograms_d[obs],
-                histname_unfolded = 'ibu',
-                acceptance_corrected = unfolder.with_acceptance_correction,
-                efficiency_corrected = unfolder.with_efficiency_correction,
-                suffix = '_ibu'
-            )
+            if unfolder.with_acceptance_correction and (unfolder.with_efficiency_correction or dh_sig_um is not None):
+                # only compute diff. Xs if acceptance corrections have been applied 
+                # and it is possible to compute efficiency corrections if they have not been applied
+                compute_differential_xsections(
+                    histograms_obs_d = histograms_d[obs],
+                    histname_unfolded = 'ibu',
+                    acceptance_corrected = unfolder.with_acceptance_correction,
+                    efficiency_corrected = unfolder.with_efficiency_correction,
+                    suffix = '_ibu'
+                )
 
         # compute metrics
         if compute_metrics and len(obs_list)==1:
@@ -961,7 +990,7 @@ def make_histograms(
 
     # unmatched signal events for binned efficiency corrections if needed
     dh_sig_um = None
-    if apply_corrections and not ufdr.with_efficiency_correction:
+    if apply_corrections:
         dh_sig_um = load_unmatched_datahandler(
             filepaths_unmatched = filepaths_unmatched,
             vnames_truth = [obsCfg_d[obs]['branch_mc'] for obs in args_d['observables']],

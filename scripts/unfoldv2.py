@@ -167,16 +167,13 @@ def unfold(**parsed_args):
 
     if parsed_args['binning_config']:
         # unmatched signal events for binned efficiency corrections if needed
-        if unfolder.with_efficiency_correction:
-            dh_sig_um = None # no longer need binned efficiency corrections
-        else:
-            dh_sig_um = load_unmatched_datahandler(
-                filepaths_unmatched = [], # guess file names from 'signal'
-                vnames_truth = [obsConfig_d[obs]['branch_mc'] for obs in all_observables],
-                outputdir = parsed_args['outputdir'],
-                weight_type = parsed_args.get("weight_mc", 'nominal'),
-                filepaths_signal = parsed_args['signal']
-            )
+        dh_sig_um = load_unmatched_datahandler(
+            filepaths_unmatched = [], # guess file names from 'signal'
+            vnames_truth = [obsConfig_d[obs]['branch_mc'] for obs in all_observables],
+            outputdir = parsed_args['outputdir'],
+            weight_type = parsed_args.get("weight_mc", 'nominal'),
+            filepaths_signal = parsed_args['signal']
+        )
 
         make_histograms_from_unfolder(
             unfolder,
