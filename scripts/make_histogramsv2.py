@@ -12,7 +12,6 @@ from OmniFoldTTbar import load_unfolder
 import ibu
 from plot_histograms import plot_histograms_from_dict
 
-import ttbarDiffXsRun2.binnedCorrections as bc
 from ttbarDiffXsRun2.helpers import ttbar_diffXs_run2_params
 
 import logging
@@ -571,7 +570,7 @@ def compute_differential_xsections(
         histograms_obs_d[histname_corrected] = histograms_obs_d[histname_unfolded].copy()
     elif 'efficiency' in histograms_obs_d:
         # apply efficiency corrections
-        histograms_obs_d[histname_corrected] = bc.apply_efficiency_correction(histograms_obs_d[histname_unfolded], histograms_obs_d['efficiency'])
+        histograms_obs_d[histname_corrected] = apply_efficiency_correction(histograms_obs_d[histname_unfolded], histograms_obs_d['efficiency'])
     else:
         logger.error("Efficiency correction is not available.")
         return histograms_obs_d
@@ -645,6 +644,17 @@ def evaluate_metrics(
                 mdict[observable], metrics_dir + f"/{observable}")
 
     return mdict
+
+def apply_efficiency_correction(histogram, h_efficiency):
+    if isinstance(histogram, list):
+        return [ apply_efficiency_correction(hh, h_efficiency) for hh in histogram ]
+    elif isinstance(histogram, fh.FlattenedHistogram)
+        return histogram.divide(h_efficiency)
+    else:
+        # In case the correction histogram has a different binning
+        # Get the correction factors using the histogram's bin centers
+        f_eff = histUtils.read_histogram_at_locations(histogram.axes[0].centers, h_efficiency)
+        return histogram * (1./f_eff)
 
 def make_histograms_from_unfolder(
     unfolder,
