@@ -112,7 +112,8 @@ class OmniFoldTTbar():
         correct_efficiency=False,
         correct_acceptance=False,
         # max dR for matching reco and truth tops
-        match_dR=None
+        match_dR=None,
+        suffix=''
     ):
 
         # output directory
@@ -157,7 +158,8 @@ class OmniFoldTTbar():
             use_toydata = use_toydata,
             correct_efficiency = correct_efficiency,
             correct_acceptance = correct_acceptance,
-            match_dR = match_dR
+            match_dR = match_dR,
+            suffix = suffix
         )
 
     def __del__(self):
@@ -181,6 +183,7 @@ class OmniFoldTTbar():
         correct_efficiency = False, # bool
         correct_acceptance = False, # bool
         match_dR = None, # float
+        suffix = '', # str, suffix added to the virtual dataset names
         ):
         """
         Load input files into data handlers: self.handle_obs, self.handle_sig, 
@@ -217,7 +220,7 @@ class OmniFoldTTbar():
             reweighter = data_reweighter,
             weight_type = weight_type_data,
             use_toydata = use_toydata,
-            outputname = os.path.join(self.outdir, "obs"),
+            outputname = os.path.join(self.outdir, f"obs{suffix}"),
             match_dR = match_dR, # For pseudo data
             odd_or_even = sel_obs
             )
@@ -229,7 +232,7 @@ class OmniFoldTTbar():
             filepaths_sig, vars_reco, vars_truth,
             weight_type = weight_type_mc,
             use_toydata = use_toydata,
-            outputname = os.path.join(self.outdir, "sig"),
+            outputname = os.path.join(self.outdir, f"sig{suffix}"),
             match_dR = match_dR,
             odd_or_even = sel_sig
             )
@@ -243,7 +246,7 @@ class OmniFoldTTbar():
                 filepaths_bkg, vars_reco, [],
                 weight_type = weight_type_mc,
                 use_toydata = use_toydata,
-                outputname = os.path.join(self.outdir, "bkg"),
+                outputname = os.path.join(self.outdir, f"bkg{suffix}"),
                 odd_or_even = sel_sig
                 )
             logger.info(f"Total number of background events: {len(self.handle_bkg)}")
@@ -256,7 +259,7 @@ class OmniFoldTTbar():
                 filepaths_obsbkg, vars_reco, [],
                 weight_type = weight_type_data,
                 use_toydata = use_toydata,
-                outputname = os.path.join(self.outdir, "obsbkg"),
+                outputname = os.path.join(self.outdir, f"obsbkg{suffix}"),
                 odd_or_even = sel_obs
                 )
             logger.info(f"Total number of background events mixed with data: {len(self.handle_obsbkg)}")
@@ -833,7 +836,8 @@ def init_unfolder(args_d):
         use_toydata = args_d.get("toydata", False),
         correct_efficiency = args_d.get('correct_efficiency', False),
         correct_acceptance = args_d.get('correct_acceptance', False),
-        match_dR = args_d.get('match_dR')
+        match_dR = args_d.get('match_dR'),
+        suffix = args_d.get('suffix', '')
         )
 
     # If needed, exclude events in the overflow and underflow bins to match what is done in the case of binned unfolding

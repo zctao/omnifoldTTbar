@@ -869,7 +869,8 @@ def load_unmatched_datahandler(
     vnames_truth,
     outputdir = '.',
     weight_type = 'nominal',
-    filepaths_signal=None
+    filepaths_signal=None,
+    suffix=''
     ):
 
     if not filepaths_unmatched:
@@ -884,7 +885,7 @@ def load_unmatched_datahandler(
         dh_umnatched = DataHandlerH5(
             filepaths_unmatched,
             variable_names_mc = vnames_truth,
-            outputname = os.path.join(outputdir, 'sig_unmatched'),
+            outputname = os.path.join(outputdir, f'sig_unmatched{suffix}'),
             weight_type = weight_type,
             use_existing_vds = False,
         )
@@ -945,6 +946,7 @@ def make_histograms(
     logger.info(f"Load data handlers")
     t_load_start = time.time()
 
+    args_d['suffix'] = "_hist"
     ufdr = load_unfolder(args_d)
 
     # unmatched signal events for binned efficiency corrections if needed
@@ -955,7 +957,8 @@ def make_histograms(
             vnames_truth = [obsCfg_d[obs]['branch_mc'] for obs in args_d['observables']],
             outputdir = outputdir,
             weight_type = args_d.get("weight_mc", 'nominal'),
-            filepaths_signal = args_d['signal']
+            filepaths_signal = args_d['signal'],
+            suffix = "_hist"
         )
 
         if dh_sig_um is None:
