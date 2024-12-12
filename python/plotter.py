@@ -13,6 +13,7 @@ rng = default_rng()
 
 import util
 import histUtils as myhu
+import FlattenedHistogram as fh
 
 import logging
 logger = logging.getLogger('plotter')
@@ -1430,6 +1431,9 @@ def plot_response(figname, histogram2d, variable, title='Detector Response', per
     variable : str
         Name of the plotted variable.
     """
+    if isinstance(histogram2d, fh.FlattenedResponse):
+        histogram2d = histogram2d.get()
+
     h2d = histogram2d.values()
     xedges = histogram2d.axes[0].edges
     yedges = histogram2d.axes[1].edges

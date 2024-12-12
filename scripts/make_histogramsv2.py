@@ -114,7 +114,7 @@ def compute_truth_distributions_noflow(
         h2d_sig = datahandler_sig.get_response_flattened(
             variable_reco, variable_truth,
             bins_reco, bins_truth,
-            absoluteValue = absoluteValue,
+            absoluteValues = absoluteValue,
             normalize_truthbins = False
         )
         histograms_obs_d['prior_noflow'] = h2d_sig.projectToTruth(flow=False)
@@ -125,7 +125,7 @@ def compute_truth_distributions_noflow(
             h2d_data = datahandler_data.get_response_flattened(
                 variable_reco, variable_truth,
                 bins_reco, bins_truth,
-                absoluteValue = absoluteValue,
+                absoluteValues = absoluteValue,
                 normalize_truthbins = False
             )
             histograms_obs_d['truth_noflow'] = h2d_data.projectToTruth(flow=False)
@@ -170,7 +170,7 @@ def compute_response(
         histograms_obs_d['response'] = datahandler.get_response_flattened(
             variables_reco, variables_truth,
             bins_reco, bins_truth,
-            absoluteValue = absoluteValue,
+            absoluteValues = absoluteValue,
             normalize_truthbins=True
         )
     else:
@@ -239,7 +239,7 @@ def compute_binned_acceptance_noflow(
         h2d = datahandler.get_response_flattened(
             variable_reco, variable_truth,
             bins_reco, bins_truth,
-            absoluteValue = absoluteValue,
+            absoluteValues = absoluteValue,
             normalize_truthbins = False
         )
 
@@ -330,7 +330,7 @@ def compute_binned_efficiency_noflow(
         h2d = datahandler.get_response_flattened(
             variable_reco, variable_truth,
             bins_reco, bins_truth,
-            absoluteValue = absoluteValue,
+            absoluteValues = absoluteValue,
             normalize_truthbins = False,
             # TODO should use truth weights? 
             #weights = datahandler.get_weights(reco_level=False, valid_only=False)

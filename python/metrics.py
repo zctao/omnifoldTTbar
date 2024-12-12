@@ -7,6 +7,7 @@ from scipy import stats
 import plotter
 from util import prepend_arrays
 from histUtils import get_values_and_errors
+import FlattenedHistogram as fh
 
 def _compute_metrics_wrt_ref(
         metrics_algo,
@@ -79,6 +80,11 @@ def compute_Chi2(hist_obs, hist_exp):
     """
     Compute Chi2 and numbers of degree of freedom between two Hist objects
     """
+
+    if isinstance(hist_obs, fh.FlattenedHistogram):
+        hist_obs = hist_obs.flatten()
+    if isinstance(hist_exp, fh.FlattenedHistogram):
+        hist_exp = hist_exp.flatten()
 
     if hist_obs.size != hist_exp.size:
         raise RuntimeError("Input histograms are not of the same size")
@@ -155,6 +161,11 @@ def write_metrics_Chi2_wrt_prev(hists_unfolded):
 ######
 # Triangular discriminator
 def compute_Delta(histogram_1, histogram_2):
+    if isinstance(histogram_1, fh.FlattenedHistogram):
+        histogram_1 = histogram_1.flatten()
+    if isinstance(histogram_2, fh.FlattenedHistogram):
+        histogram_2 = histogram_2.flatten()
+
     if histogram_1.size != histogram_2.size:
         raise RuntimeError("Input histograms are not of the same size")
 
