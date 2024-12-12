@@ -541,6 +541,23 @@ class OmniFoldTTbar():
         else:
             raise NotImplementedError("TODO Virtual Datasets")
 
+    def get_unfolded_weights(
+        self,
+        iteration = -1, # If None, get all iterations
+        nruns = None, # Use weights from the number of runs. If None, use all available
+        ):
+
+        if iteration is None and nruns is None: # load everything
+            warr = self.unfolded_weights[:] # shape: (nruns, niterations, nevents)
+        elif iteration is None: # load all iterations
+            warr = self.unfolded_weights[:nruns,...] # shape: (nruns, niterations, nevents)
+        elif nruns is None: # load the specified iteration
+            warr = self.unfolded_weights[:,iteration,:] # shape: (nruns, nevents)
+        else:
+            warr = self.unfolded_weights[:nruns,iteration,:] # shape: (nruns, nevents)
+
+        return warr
+
     def get_unfolded_hists_resamples(
         self,
         varnames, # str or list of str, name of the variable(s)
