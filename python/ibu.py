@@ -3,6 +3,7 @@ import numpy as np
 import histUtils as myhu
 import make_histograms as mh
 from ttbarDiffXsRun2.binnedCorrections import apply_acceptance_correction, apply_efficiency_correction
+import FlattenedHistogram as fh
 
 def unfold(
     response,
@@ -213,3 +214,104 @@ def run_ibu_from_unfolder_multidim(
         return fhists_ibu, bin_corr, fresp
     else:
         return fhists_ibu[-1], bin_corr[-1], fresp
+
+def run_ibu_from_histograms(
+    response,
+    hist_obs,
+    hist_prior,
+    hist_bkg = None,
+    hist_obs_bootstrap = [],
+    niterations = 4, # number of iterations
+    norm = None,
+    density = False,
+    acceptance = None,
+    efficiency = None,
+    all_iterations = False
+    ):
+
+    isMultiDim = isinstance(hist_prior, fh.FlattenedHistogram)
+    if isMultiDim:
+        fh_prior = hist_prior.copy() # keep a copy for repacking later
+
+        # convert to normal hist.Hist for unfolding
+        response = response.get()
+        hist_obs = hist_obs.flatten()
+        hist_prior = hist_prior.flatten()
+        if hist_bkg is not None:
+            hist_bkg = hist_bkg.flatten()
+        if acceptance is not None:
+            acceptance = acceptance.flatten()
+        if efficiency is not None:
+            efficiency = efficiency.flatten()
+
+    if hist_bkg is not None:
+        hist_obs = hist_obs + (-1 * hist_bkg)
+
+    hists_ibu = unfold(
+        response, hist_obs, hist_prior,
+        niterations,
+        acceptance_correction = acceptance,
+        efficiency_correction = efficiency
+    )
+
+    if hist_obs_bootstrap:
+        # bootstrap
+        hists_ibu_resample = []
+        for hist_obs_bs in hist_obs_bootstrap:
+            if isinstance(hist_obs_bs, fh.FlattenedHistogram):
+                hist_obs_bs = hist_obs_bs.flatten()
+
+            if hist_bkg is not None:
+                hist_obs_bs = hist_obs_bs + (-1 * hist_bkg)
+
+            hists_ibu_resample.append(
+                unfold(
+                    response, hist_obs_bs, hist_prior,
+                    niterations,
+                    acceptance_correction = acceptance,
+                    efficiency_correction = efficiency
+                )
+            )
+
+        # standard deviation of each bin
+        bin_errors = myhu.get_sigma_from_hists(hists_ibu_resample) # shape: (niterations, nbins_hist)
+
+        # set error
+        myhu.set_hist_errors(hists_ibu, bin_errors)
+
+    # bin correlations
+    bin_corr = myhu.get_bin_correlations_from_hists(hists_ibu_resample)
+
+    if isMultiDim:
+        # repack as FlattenedHistogram
+        fhists_ibu = []
+        for h_ibu in hists_ibu:
+            fhists_ibu.append(fh_prior.copy())
+            fhists_ibu[-1].fromFlat(h_ibu)
+
+            if norm is not None:
+                fhists_ibu[-1].renormalize(norm=norm, density=False)
+
+            if density:
+                fhists_ibu[-1].make_density()
+
+        if all_iterations:
+            return fhists_ibu, bin_corr
+        else:
+            return fhists_ibu[-1], bin_corr[-1]
+
+    else:
+        # normalization
+        if norm is not None:
+            for h in hists_ibu:
+                h = myhu.renormalize_hist(h, norm, density=False)
+
+        if density:
+            for h in hists_ibu:
+                h /= myhu.get_hist_widths(h)
+
+        if all_iterations:
+            return hists_ibu, bin_corr
+        else:
+            # return the last one
+            return hists_ibu[-1], bin_corr[-1]
