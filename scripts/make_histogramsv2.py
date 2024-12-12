@@ -637,14 +637,14 @@ def evaluate_metrics(
         mdict[observable]["nominal"] = metrics.write_all_metrics_binned(
             hists_uf_alliters, h_gen, h_truth)
 
-    hists_uf_all = hists_dict.get('unfolded_all')
+    hists_uf_all = hists_dict[observable].get('unfolded_all')
     if h_gen is not None and hists_uf_all is not None and len(hists_uf_all) > 1:
         # every run
         mdict[observable]['resample'] = metrics.write_all_metrics_binned(
             hists_uf_all, h_gen, h_truth)
 
     # IBU if available
-    hists_ibu_alliters = hists_dict.get('ibu_alliters')
+    hists_ibu_alliters = hists_dict[observable].get('ibu_alliters')
     if hists_ibu_alliters is not None:
         mdict[observable]['IBU'] = metrics.write_all_metrics_binned(
             hists_ibu_alliters, h_gen, h_truth)
