@@ -381,14 +381,14 @@ def write_dict_uproot(file_to_write, obj_dict, top_dir=''):
             write_dict_uproot(
                 file_to_write, v, os.path.join(top_dir, k)
                 )
-        else:
-            if isinstance(v, list):
-                for iv, vv in enumerate(v):
-                    file_to_write[os.path.join(top_dir, f"{k}-list-{iv}")] = vv
-            elif isinstance(v, fh.FlattenedHistogram2D) or isinstance(v, fh.FlattenedHistogram3D) or isinstance(v, fh.FlattenedResponse):
-                v.write(file_to_write, os.path.join(top_dir, k))
-            elif v is not None:
-                file_to_write[os.path.join(top_dir, k)] = v
+        elif isinstance(v, list):
+            for iv, vv in enumerate(v):
+                write_dict_uproot(file_to_write, {f"{k}-list-{iv}": vv}, top_dir)
+                #file_to_write[os.path.join(top_dir, f"{k}-list-{iv}")] = vv
+        elif isinstance(v, fh.FlattenedHistogram2D) or isinstance(v, fh.FlattenedHistogram3D) or isinstance(v, fh.FlattenedResponse):
+            v.write(file_to_write, os.path.join(top_dir, k))
+        elif v is not None:
+            file_to_write[os.path.join(top_dir, k)] = v
 
 def write_histograms_dict_to_file(hists_dict, file_name):
     with uproot.recreate(file_name) as f:
