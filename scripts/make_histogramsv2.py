@@ -471,10 +471,20 @@ def compute_unfolding_stat_uncertainty(
         std_errs = np.sqrt(fhtmp.flatten().variances())
         h_std_err.fromFlatArray(std_errs, None)
 
+        # set the bin errors of the unfolded distribution
+        if 'unfolded' in histograms_obs_d:
+            h_unfolded_flat = histograms_obs_d['unfolded'].flatten()
+            histUtils.set_hist_errors(h_unfolded_flat, std_errs)
+            histograms_obs_d['unfolded'].fromFlat(h_unfolded_flat)
+
     else:
         htmp = histUtils.average_histograms(hists_unfolded_allruns, standard_error_of_the_mean=True)
         histUtils.set_hist_contents(h_std_err, np.sqrt(htmp.variances()))
         histUtils.set_hist_errors(h_std_err, 0)
+
+        # set the bin errors of the unfolded distribution
+        if 'unfolded' in histograms_obs_d:
+            histUtils.set_hist_errors(histograms_obs_d['unfolded'], h_std_err.values())
 
     histograms_obs_d['network_unc'] = h_std_err
 
@@ -488,6 +498,8 @@ def compute_unfolding_stat_uncertainty(
         histograms_obs_d['unfolded_correlation'] = histUtils.get_bin_correlations_from_hists(hists_unfolded_allruns_flat)
     else:
         histograms_obs_d['unfolded_correlation'] = histUtils.get_bin_correlations_from_hists(hists_unfolded_allruns)
+
+    return histograms_obs_d
 
 def compute_unfolded_distributions_ibu(
     histograms_obs_d,
