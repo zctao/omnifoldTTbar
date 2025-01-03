@@ -9,6 +9,8 @@ import yaml
 # systematics
 from ttbarDiffXsRun2.systematics import get_systematics, get_gen_weight_index, get_sum_weights_dict
 
+all_backgrounds = ['fakes', 'Wjets', 'Zjets', 'singleTop_sch', 'singleTop_tch', 'singleTop_tW_DS_dyn', 'ttH', 'ttV', 'VV']
+
 def subCampaigns_to_years(subcampaigns):
     years = []
     for e in subcampaigns:
@@ -25,17 +27,13 @@ def subCampaigns_to_years(subcampaigns):
 
 def get_samples_data(
     sample_dir, # top direcotry to look for sample files
-    category = 'ljets', # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     check_exist = True, # If True, check if the files exist
     ):
 
     years = subCampaigns_to_years(subcampaigns)
 
-    if isinstance(category, str):
-        category = [category]
-
-    data = [os.path.join(sample_dir, f"obs/{y}/data_0_pseudotop_{c}.root") for c in category for y in years]
+    data = [os.path.join(sample_dir, f"obs/{y}/data_0_pseudotop_ljets.h5") for y in years]
 
     assert data, "Data sample empty"
     if check_exist:
@@ -46,24 +44,19 @@ def get_samples_data(
 
 def get_samples_signal(
     sample_dir, # top direcotry to look for sample files
-    category = 'ljets', # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
-    sample_type = 'systCRL', # systCRL or detNP or mcWAlt
-    sample_suffix = 'nominal',
+    sample_suffix = '',
+    syst_type = 'nominal',
     check_exist = True, # If True, check if the files exist
     ):
 
-    if isinstance(category, str):
-        category = [category]
-
-    sample_name = f"{sample_type}/ttbar_{sample_suffix}"
+    sample_name = f"ttbar_{sample_suffix}" if sample_suffix else "ttbar"
 
     samples_sig = []
     for e in subcampaigns:
-        for c in category:
-            s = glob.glob(os.path.join(sample_dir, f"{sample_name}/{e}/ttbar_*_pseudotop_parton_{c}.root"))
-            s.sort()
-            samples_sig += s
+        s = glob.glob(os.path.join(sample_dir, f"{sample_name}/{syst_type}/{e}/ttbar_*_pseudotop_parton_ljets.h5"))
+        s.sort()
+        samples_sig += s
 
     assert samples_sig, "Signal sample empty"
     if check_exist:
@@ -74,16 +67,11 @@ def get_samples_signal(
 
 def get_samples_backgrounds(
     sample_dir, # top direcotry to look for sample files
-    category = 'ljets', # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
-    backgrounds = ['fakes', 'Wjets', 'Zjets', 'singleTop', 'ttH', 'ttV', 'VV'],
-    sample_type = 'systCRL', # systCRL or detNP or mcWAlt
-    sample_suffix = 'nominal',
+    backgrounds = all_backgrounds,
+    syst_type = 'nominal',
     check_exist = True, # If True, check if the files exist
     ):
-
-    if isinstance(category, str):
-        category = [category]
 
     samples_bkg = []
 
@@ -91,20 +79,16 @@ def get_samples_backgrounds(
         if bkg.lower() == "fakes":
             # QCD
             years = subCampaigns_to_years(subcampaigns)
-            samples_bkg += [os.path.join(sample_dir, f"fakes/{y}/data_0_pseudotop_{c}.root") for c in category for y in years]
+            samples_bkg += [os.path.join(sample_dir, f"fakes/{y}/data_0_pseudotop_ljets.h5") for y in years]
         else:
-            if bkg in ["Wjets", "Zjets"]:
-                sample_name = f"systCRL/{bkg}_nominal" # only one that is available
-            else:
-                sample_name = f"{sample_type}/{bkg}_{sample_suffix}"
+            sample_name = f"{bkg}/{syst_type}"
 
-            #samples_bkg += [os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_{c}.root") for c in category for e in subcampaigns]
+            #samples_bkg += [os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.root") for e in subcampaigns]
             samples_b = []
             for e in subcampaigns:
-                for c in category:
-                    b = glob.glob(os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_{c}.root"))
-                    b.sort()
-                    samples_b += b
+                b = glob.glob(os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.root"))
+                b.sort()
+                samples_b += b
             samples_bkg += samples_b
 
     assert samples_bkg, "Background sample empty"
@@ -116,7 +100,6 @@ def get_samples_backgrounds(
 
 def write_config_nominal(
     sample_local_dir,
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -125,9 +108,9 @@ def write_config_nominal(
     print("nominal")
 
     # list of samples
-    data_nominal = get_samples_data(sample_local_dir, category, subcampaigns)
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nominal = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    data_nominal = get_samples_data(sample_local_dir, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     # output directory
     outdir_nominal = os.path.join(output_top_dir, "nominal")
@@ -150,7 +133,6 @@ def write_config_bootstrap(
     sample_local_dir,
     nresamples,
     start_index = 0,
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -159,9 +141,9 @@ def write_config_bootstrap(
     print("bootstrap data")
 
     # list of samples
-    data_nominal = get_samples_data(sample_local_dir, category, subcampaigns)
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nominal = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    data_nominal = get_samples_data(sample_local_dir, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     # output directory
     outdir_bs = os.path.join(output_top_dir, "bootstrap")
@@ -188,7 +170,6 @@ def write_config_bootstrap_mc(
     sample_local_dir,
     nresamples,
     start_index = 0,
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -197,9 +178,9 @@ def write_config_bootstrap_mc(
     print("bootstrap mc")
 
     # list of samples
-    data_nominal = get_samples_data(sample_local_dir, category, subcampaigns)
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nominal = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    data_nominal = get_samples_data(sample_local_dir, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     # output directory
     outdir_bs = os.path.join(output_top_dir, "bootstrap_mc")
@@ -227,7 +208,6 @@ def write_config_bootstrap_mc_clos(
     sample_local_dir,
     nresamples,
     start_index = 0,
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -236,8 +216,8 @@ def write_config_bootstrap_mc_clos(
     print("bootstrap mc closure")
 
     # nominal samples:
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nominal = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     # output directory
     outdir_bs = os.path.join(output_top_dir, "bootstrap_mc_clos")
@@ -266,7 +246,6 @@ def write_config_bootstrap_mc_clos(
 
 def write_config_closure_resample(
     sample_local_dir,
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -275,8 +254,8 @@ def write_config_closure_resample(
     print("closure resample")
 
     # nominal samples:
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nominal = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     # output directory
     outdir_clos = os.path.join(output_top_dir, "closure_resample")
@@ -304,7 +283,6 @@ def write_config_closure_resample(
 
 def write_config_closure_oddeven(
     sample_local_dir,
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -313,8 +291,8 @@ def write_config_closure_oddeven(
     print("closure oddeven")
 
     # nominal samples:
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nominal = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     # output directory
     outdir_clos = os.path.join(output_top_dir, "closure_oddeven")
@@ -342,7 +320,6 @@ def write_config_closure_oddeven(
 def write_config_theory(
     sample_local_dir,
     systematics_keywords = [],
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -372,10 +349,8 @@ def write_config_theory(
             for era in subcampaigns:
                 # signal sample
                 sig_era = get_samples_signal(
-                    sample_local_dir, category,
+                    sample_local_dir,
                     subcampaigns = [era],
-                    sample_type = 'mcWAlt',
-                    sample_suffix = 'nominal'
                     )
 
                 if sumWgts_d:
@@ -396,10 +371,8 @@ def write_config_theory(
             for era in subcampaigns:
                 # signal sample
                 sig_era = get_samples_signal(
-                    sample_local_dir, category,
+                    sample_local_dir,
                     subcampaigns = [era],
-                    sample_type = 'mcWAlt',
-                    sample_suffix = 'nominal'
                     )
 
                 if sumWgts_d:
@@ -436,7 +409,6 @@ def write_config_theory(
 def write_config_systematics_modelling(
     sample_local_dir,
     systematics_keywords = [],
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -448,9 +420,9 @@ def write_config_systematics_modelling(
 
     # nominal signal sample
     signal_nom = get_samples_signal(
-        sample_local_dir, category, subcampaigns,
-        sample_type = 'mcWAlt',
-        sample_suffix = 'AFII_nominal'
+        sample_local_dir,
+        subcampaigns,
+        sample_suffix = 'AFII',
         )
 
     for syst in get_systematics(systematics_keywords, syst_type='Modelling'):
@@ -462,9 +434,9 @@ def write_config_systematics_modelling(
 
         # alternative sample as the pseudo data
         signal_alt = get_samples_signal(
-            sample_local_dir, category, subcampaigns,
-            sample_type = 'mcWAlt',
-            sample_suffix = f"{syst.split('_')[-1]}_nominal"
+            sample_local_dir, 
+            subcampaigns,
+            sample_suffix = f"{syst.split('_')[-1]}",
             )
 
         syst_cfg = common_cfg.copy()
@@ -487,7 +459,6 @@ def write_config_systematics_modelling(
 def write_config_systematics_background(
     sample_local_dir,
     systematics_keywords = [],
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -497,37 +468,30 @@ def write_config_systematics_background(
 
     cfg_bkg_list = []
 
-    all_backgrounds = ['fakes', 'Wjets', 'Zjets', 'singleTop', 'ttH', 'ttV', 'VV']
-
     # nominal signal and background samples
-    sig_nom = get_samples_signal(sample_local_dir, category, subcampaigns)
+    sig_nom = get_samples_signal(sample_local_dir, subcampaigns)
 
     bkg_nom = get_samples_backgrounds(
-        sample_local_dir, category, subcampaigns,
+        sample_local_dir, subcampaigns,
         backgrounds = all_backgrounds
         )
 
     # background modelling
     for syst in get_systematics(systematics_keywords, syst_type="BackgroundModelling"):
-        # the prefix is the background name
-        bkg_name = syst.split('_')[0]
-        bkg_variation = syst.split('_')[-1]
+        # singleTop
+        if syst == 'singleTop_tW_DS_dyn':
+            # replace 'singleTop_tW_DR_dyn' in the nominal list
+            all_backgrounds_alt = all_backgrounds.copy()
+            all_backgrounds_alt.remove('singleTop_tW_DR_dyn')
+            all_backgrounds_alt.append('singleTop_tW_DS_dyn')
 
-        # alternative background samples
-        bkg_alt = get_samples_backgrounds(
-            sample_local_dir, category, subcampaigns,
-            backgrounds = [bkg_name],
-            sample_type = 'mcWAlt',
-            sample_suffix = f"{bkg_variation}_nominal"
-        )
-
-        # background samples that are not affected by this systematic uncertainty
-        bkg_name_others = all_backgrounds.copy()
-        bkg_name_others.remove(bkg_name)
-        bkg_alt += get_samples_backgrounds(
-            sample_local_dir, category, subcampaigns,
-            backgrounds = bkg_name_others
-        )
+            # alternative background samples
+            bkg_alt = get_samples_backgrounds(
+                sample_local_dir, subcampaigns,
+                backgrounds = all_backgrounds_alt
+                )
+        else:
+            raise RuntimeError(f"Something went wrong. Unknown background modelling systematic {syst}.")
 
         syst_cfg = common_cfg.copy()
         syst_cfg.update({
@@ -547,23 +511,29 @@ def write_config_systematics_background(
 
     # background normalization
     for syst in get_systematics(systematics_keywords, syst_type="BackgroundNorm"):
-        bkg_name = syst.split('_')[0]
+        bkg_prefix = syst.split('_')[0]
         f_rescale = float(syst.split('_')[-1])
 
-        # the background sample to rescale
+        # separate background samples
+        bkg_names_rescale = []
+        bkg_names_others = []
+        for bkg in all_backgrounds:
+            if bkg.startswith(bkg_prefix):
+                bkg_names_rescale.append(bkg)
+            else:
+                bkg_names_others.append(bkg)
+
         bkg_rescale = get_samples_backgrounds(
-            sample_local_dir, category, subcampaigns,
-            backgrounds = [bkg_name]
+            sample_local_dir, subcampaigns,
+            backgrounds = bkg_names_rescale
         )
 
         bkg_alt = [f"{sample}*{f_rescale}" for sample in bkg_rescale]
 
         # add the rest of the background samples
-        bkg_name_others = all_backgrounds.copy()
-        bkg_name_others.remove(bkg_name)
         bkg_alt += get_samples_backgrounds(
-            sample_local_dir, category, subcampaigns,
-            backgrounds = bkg_name_others
+            sample_local_dir, subcampaigns,
+            backgrounds = bkg_names_others
         )
 
         syst_cfg = common_cfg.copy()
@@ -587,7 +557,6 @@ def write_config_systematics_background(
 def write_config_systematics(
     sample_local_dir,
     systematics_keywords = [],
-    category = "ljets", # "ejets" or "mjets" or "ljets"
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -598,8 +567,8 @@ def write_config_systematics(
     cfg_dict_list = []
 
     # nominal samples:
-    sig_nom = get_samples_signal(sample_local_dir, category, subcampaigns)
-    bkg_nom = get_samples_backgrounds(sample_local_dir, category, subcampaigns)
+    sig_nom = get_samples_signal(sample_local_dir, subcampaigns)
+    bkg_nom = get_samples_backgrounds(sample_local_dir, subcampaigns)
 
     print("central")
     central_cfg = common_cfg.copy()
@@ -626,16 +595,16 @@ def write_config_systematics(
         # samples
         # varied samples as pseudo data
         sig_syst = get_samples_signal(
-            sample_local_dir, category, subcampaigns,
-            sample_type = 'detNP',
-            sample_suffix = syst
+            sample_local_dir,
+            subcampaigns,
+            syst_type = syst,
             )
 
         # background samples to be mixed with the above signal samples to make pseudo data
         bkg_syst = get_samples_backgrounds(
-            sample_local_dir, category, subcampaigns,
-            sample_type = 'detNP',
-            sample_suffix = syst
+            sample_local_dir,
+            subcampaigns,
+            syst_type = syst
             )
 
         # unfold using the nominal samples
@@ -690,7 +659,6 @@ def write_config_systematics(
     cfg_dict_list += write_config_theory(
         sample_local_dir,
         systematics_keywords = systematics_keywords,
-        category = category,
         subcampaigns = subcampaigns,
         output_top_dir = output_top_dir,
         outname_config = outname_config,
@@ -702,7 +670,6 @@ def write_config_systematics(
     cfg_dict_list += write_config_systematics_modelling(
         sample_local_dir,
         systematics_keywords = systematics_keywords,
-        category = category,
         subcampaigns = subcampaigns,
         output_top_dir = output_top_dir,
         outname_config = outname_config,
@@ -714,7 +681,6 @@ def write_config_systematics(
     cfg_dict_list += write_config_systematics_background(
         sample_local_dir,
         systematics_keywords = systematics_keywords,
-        category = category,
         subcampaigns = subcampaigns,
         output_top_dir = output_top_dir,
         outname_config = outname_config,
@@ -732,7 +698,6 @@ def write_config_systematics(
 def write_config_model(
     sample_local_dir,
     ttbar_alt, # 'hw', 'amc'
-    category = "ljets",
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -744,15 +709,15 @@ def write_config_model(
     # alternative ttbar vs nominal ttbar
     # samples
     signal_nominal = get_samples_signal(
-        sample_local_dir, category, subcampaigns,
-        sample_type = 'mcWAlt',
-        sample_suffix = 'AFII_nominal'
+        sample_local_dir,
+        subcampaigns,
+        sample_suffix = 'AFII',
     )
 
     signal_alt = get_samples_signal(
-        sample_local_dir, category, subcampaigns,
-        sample_type = 'mcWAlt',
-        sample_suffix = f"{ttbar_alt}_nominal"
+        sample_local_dir,
+        subcampaigns,
+        sample_suffix = ttbar_alt,
     )
 
     outdir_alt = os.path.join(output_top_dir, f"ttbar_{ttbar_alt}_vs_nominal")
@@ -776,7 +741,6 @@ def write_config_model(
 def write_config_stress(
     sample_local_dir,
     fpath_reweights = [],
-    category = "ljets",
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -785,7 +749,7 @@ def write_config_stress(
 
     print("Stress tests")
 
-    sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
+    sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
 
     stress_common_cfg = common_cfg.copy()
     stress_common_cfg.update({
@@ -838,7 +802,7 @@ def write_config_stress(
         util.write_dict_to_json(stress_data_cfg, f"{outname_config}_stress_data.json")
 
         # use the reweighted signal MC to unfold data
-        data_nominal = get_samples_data(sample_local_dir, category, subcampaigns)
+        data_nominal = get_samples_data(sample_local_dir, subcampaigns)
         stress_data_alt_cfg = stress_common_cfg.copy()
         stress_data_alt_cfg.update({
             "outputdir": os.path.join(output_top_dir, f"stress_data_alt"),
@@ -858,7 +822,6 @@ def write_config_stress(
 def write_config_stress_binned(
     sample_local_dir,
     fpath_reweights,
-    category = "ljets",
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
@@ -872,7 +835,7 @@ def write_config_stress_binned(
         # get the real paths
         fpath_reweights_real = [os.path.realpath(fp) for fp in fpath_reweights]
 
-        sig_nominal = get_samples_signal(sample_local_dir, category, subcampaigns)
+        sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
 
         observables = common_cfg["observables"]
 
@@ -907,7 +870,6 @@ def write_config_stress_binned(
 
 def createRun2Config(
         sample_local_dir,
-        category, # "ejets" or "mjets" or "ljets"
         outname_config = 'runConfig',
         output_top_dir = '.',
         subcampaigns = ["mc16a", "mc16d", "mc16e"],
@@ -936,7 +898,6 @@ def createRun2Config(
     # common arguments for write_config_*
     write_common_args = {
         'sample_local_dir': sample_local_dir,
-        'category': category,
         'subcampaigns': subcampaigns,
         'output_top_dir': output_top_dir,
         'outname_config': outname_config,
@@ -1007,8 +968,6 @@ if __name__ == "__main__":
                         help="Sample directory")
     parser.add_argument("-n", "--config-name", type=str,
                         default="configs/run/ttbarDiffXsRun2/runCfg_run2_ljets")
-    parser.add_argument("-c", "--category", choices=["ejets", "mjets", "ljets"],
-                        default="ljets")
     parser.add_argument("-r", "--result-dir", type=str, action=util.ParseEnvVar,
                         default="${DATA_DIR}/OmniFoldOutputs/Run2",
                         help="Output directory of unfolding runs")
@@ -1060,7 +1019,6 @@ if __name__ == "__main__":
 
     createRun2Config(
         args.sample_dir,
-        category = args.category,
         outname_config = args.config_name,
         output_top_dir = args.result_dir,
         subcampaigns = args.subcampaigns,

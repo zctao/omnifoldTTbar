@@ -65,7 +65,7 @@ syst_dict.update({
     'singleTop_tW' : {
         'type' : 'BackgroundModelling',
         'prefix' : 'singleTop_tW',
-        'uncertainties' : ['DS']
+        'uncertainties' : ['DS_dyn']
     },
     'singleTop_norm' : {
         'type' : 'BackgroundNorm',
