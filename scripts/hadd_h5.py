@@ -75,7 +75,7 @@ def hadd_h5(
         # close the file
         outputfile.close()
 
-    return outputname
+    return nevents
 
 if __name__ == "__main__":
 
