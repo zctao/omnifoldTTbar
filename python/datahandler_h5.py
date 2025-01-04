@@ -111,10 +111,6 @@ class DataHandlerH5(DataHandlerBase):
         # load data from h5 files
         filepaths_clean, weight_rescale_factors = filter_filepaths(filepaths)
 
-        # for now
-        if weight_rescale_factors and not all(f==1. for f in weight_rescale_factors):
-            logger.warning("weight rescaling from the file names are currently not supported with hdf5 inputs")
-
         ###
         if not os.path.splitext(outputname)[-1]: # no extension specified
             outputname = outputname.strip('_')+'_vds.h5'
@@ -146,8 +142,12 @@ class DataHandlerH5(DataHandlerBase):
 
         if weight_type.startswith("external:"):
             # special case: load event weights from external files
+            if not np.all(np.asarray(weight_rescale_factors)==1.):
+                logger.warning("Cannot apply weight rescale factors to external weights!")
+
             # "external:" is followed by a comma separated list of file paths
             filepaths_w = weight_type.replace("external:","",1).split(",")
+            weight_rescale_factors = [1.]*len(filepaths_w)
         else:
             # load event weights from the same files as data arrays
             filepaths_w = filepaths_clean
@@ -158,7 +158,8 @@ class DataHandlerH5(DataHandlerBase):
             filepaths_w,
             weight_name_nominal = weight_name_nominal if include_reco else None,
             weight_name_nominal_mc = weight_name_nominal_mc if include_truth else None,
-            weight_type = weight_type
+            weight_type = weight_type,
+            rescale_factors = weight_rescale_factors
         )
         # FIXME replicate the old behavior for now
         if self.weights is not None:
@@ -287,8 +288,11 @@ class DataHandlerH5(DataHandlerBase):
         filepaths,
         weight_name_nominal = None,
         weight_name_nominal_mc = None,
-        weight_type = 'nominal'
+        weight_type = 'nominal',
+        rescale_factors = 1.
         ):
+
+        nevents = []
 
         if weight_type == 'nominal' or weight_type.startswith("external:"):
             varnames_weights = []
@@ -306,7 +310,7 @@ class DataHandlerH5(DataHandlerBase):
                 assert check_keys_in_dataset(varnames_weights, self.vds)
             else:
                 logger.debug("Concatenate event weight files to a virtual dataset")
-                hadd_h5(
+                nevents = hadd_h5(
                     filepaths,
                     variable_names = varnames_weights,
                     outputfile = self.vds
@@ -332,7 +336,7 @@ class DataHandlerH5(DataHandlerBase):
                 assert check_keys_in_dataset(varnames_weights, self.vds)
             else:
                 logger.debug("Concatenate event weight files to a virtual dataset")
-                hadd_h5(
+                nevents = hadd_h5(
                     filepaths,
                     variable_names = varnames_weights,
                     padding = weight_name_nominal, # in case not all sub samples have the weight variables
@@ -351,6 +355,27 @@ class DataHandlerH5(DataHandlerBase):
                 if wname_comp == 'weight_mc':
                     self.weights_mc *= self.vds[wname_syst]
                     np.divide(self.weights_mc, self.vds[wname_comp], out=self.weights_mc, where = self.vds[wname_comp][:]!=0)
+
+        # rescale weights
+        if not hasattr(rescale_factors, '__len__'):
+            rescale_factors = [rescale_factors]*len(filepaths)
+        else:
+            assert len(rescale_factors) == len(filepaths)
+
+        if not np.all(np.asarray(rescale_factors)==1.):
+            logger.debug("Rescale event weights")
+            if not nevents:
+                logger.warning("Cannot rescale event weights when reading from existing virtual datasets! Need to know the number of events in each file")
+                return
+
+            assert len(nevents) == len(rescale_factors)
+            nevts_tot = 0
+            for ievt, rescale in zip(nevents, rescale_factors):
+                self.weights[nevts_tot:nevts_tot+ievt] *= rescale
+                if self.weights_mc is not None:
+                    self.weights_mc[nevts_tot:nevts_tot+ievt] *= rescale
+
+                nevts_tot += ievt
 
     def _set_event_selections(
         self,

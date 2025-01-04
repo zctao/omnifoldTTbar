@@ -35,17 +35,15 @@ def getDataHandler(
     Get and load a datahandler according to the input file type
     """
 
-    input_ext = os.path.splitext(filepaths[0])[-1]
-
     if use_toydata:
         dh = dhFactory.get('toy')
         dh.load_data(filepaths)
 
-    elif input_ext == ".root":
+    elif ".root" in filepaths[0]:
         # ROOT files
         dh = dhFactory.get("root", filepaths, variables_reco, variables_truth, **kwargs)
 
-    elif input_ext == ".h5":
+    elif ".h5" in filepaths[0]:
         # HDF5 files
         dh = dhFactory.get("hdf5", filepaths, variables_reco, variables_truth, outputname=outputname, **kwargs)
 
