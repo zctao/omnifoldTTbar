@@ -1,0 +1,55 @@
+#!/bin/bash
+#SBATCH --gres=gpu:1       # Request GPU "generic resources"
+#SBATCH --cpus-per-task=1  # Refer to cluster's documentation for the right CPU/GPU ratio
+#SBATCH --mem=32000M       # Memory proportional to GPUs: 32000 Cedar, 47000 Béluga, 64000 Graham.
+#SBATCH --time=1-00:00:00  # DD-HH:MM:SS
+#SBATCH --mail-user={USEREMAIL}
+#SBATCH --mail-type=ALL
+
+module load python/3.11 cuda cudnn
+
+# Prepare virualenv
+source "${{HOME}}/venv_tf/bin/activate"
+
+# Move to the node local disk
+cd ${{SLURM_TMPDIR}}
+
+# Make a work directory
+WORKDIR=$USER/${{SLURM_JOB_ID}}
+mkdir -p $WORKDIR
+cd $WORKDIR
+echo WORKDIR=$WORKDIR
+
+# Get the code
+echo 'Getting source code from github'
+git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
+source omnifoldTop/setup.sh
+
+# Prepare data
+echo 'Preparing input datasets'
+mkdir -p {INPUTDIR}
+for fname_tar in {TARBALLLIST}; do
+    tar -xf ${{fname_tar}} -C {INPUTDIR}/
+done
+
+# Prepare config
+echo 'Copying run config'
+mkdir configs
+cp {RUNCONFIG} configs/run_config.json
+
+# Prepare output directory
+echo 'Creating local output directory: {OUTPUTDIR}'
+mkdir {OUTPUTDIR}
+
+# Run unfolding
+echo 'Start running unfolding...'
+python omnifoldTop/run_unfold.py configs/run_config.json
+echo 'Unfolding done!'
+
+echo "Collect and copy back the outputs"
+cd {OUTPUTDIR}
+tar -cf {RESULT} *
+cd $WORKDIR
+
+deactivate
+echo exit code $?
