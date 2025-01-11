@@ -101,14 +101,16 @@ class ParseEnvDecoder(JSONDecoder):
                 obj[k] = [os.path.expandvars(iv) if isinstance(iv,str) else iv for iv in v]
         return obj
 
-def read_dict_from_json(filename_json):
-    jfile = open(filename_json, "r")
-    try:
-        jdict = json.load(jfile, cls=ParseEnvDecoder)
-    except json.decoder.JSONDecodeError:
-        jdict = {}
+def read_dict_from_json(filename_json, parse_env=True):
+    with open(filename_json, "r") as jfile:
+        try:
+            if parse_env:
+                jdict = json.load(jfile, cls=ParseEnvDecoder)
+            else:
+                jdict = json.load(jfile)
+        except json.decoder.JSONDecodeError:
+            jdict = {}
 
-    jfile.close()
     return jdict
 
 def write_dict_to_json(aDictionary, filename_json):
