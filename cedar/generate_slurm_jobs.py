@@ -1,4 +1,6 @@
 import os
+import tarfile
+
 import util
 
 def generate_slurm_jobs(
@@ -7,6 +9,7 @@ def generate_slurm_jobs(
     sample_tarballs, # a list of file paths to input dataset tarballs
     email = os.getenv('USER')+'@phas.ubc.ca', # for now
     output_name = None, # slurm job file name,
+    check_tarfiles = True, # if True, check if all input files are available in tarballs
     ):
 
     if not output_name:
@@ -47,9 +50,35 @@ def generate_slurm_jobs(
     with open(slurm_template) as ftmp:
         job_str = ftmp.read()
 
+    # Check the list of tarballs
+    # Check if file exists, expand to absolute paths if necessary, remove duplicates
+    tarballs_set = set()
+    for sample_tar in sample_tarballs:
+        assert os.path.isfile(sample_tar), f"Cannot find file {sample_tar}!"
+        tarballs_set.add(os.path.abspath(sample_tar))
+
+    if check_tarfiles:
+        all_sample_files = []
+        for sample_tar in tarballs_set:
+            with tarfile.open(sample_tar) as ftar:
+                for tarinfo in ftar:
+                    all_sample_files.append(os.path.join(inputdir_job, tarinfo.name))
+
+        # check if all files in the config are available
+        sample_files_config = []
+        for key in ['data', 'signal', 'background', 'bdata']:
+            samples = runcfg.get(key)
+            if not samples:
+                continue
+
+            sample_files_config += samples
+
+        # sample_files_config should be a subset of all_sample_files
+        assert set(sample_files_config) <= set(all_sample_files)
+
     job_str = job_str.format_map({
         "USEREMAIL" : email,
-        "TARBALLLIST" : " ".join(set(sample_tarballs)), # remove duplicates
+        "TARBALLLIST" : " ".join(tarballs_set), # remove duplicates
         "RUNCONFIG" : config_name,
         "INPUTDIR" : inputdir_job,
         "OUTPUTDIR" : outputdir_job,
