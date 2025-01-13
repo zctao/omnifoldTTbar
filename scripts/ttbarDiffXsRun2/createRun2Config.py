@@ -56,7 +56,6 @@ def get_samples_data_tarball(
 
     if check_exist:
         assert os.path.isfile(data_tar)
-        # TODO: check inside tarball
 
     return data_tar
 
@@ -104,7 +103,6 @@ def get_samples_signal_tarball(
 
     if check_exist:
         assert os.path.isfile(signal_tar)
-        # TODO: check inside tarball
 
     return signal_tar
 
@@ -157,7 +155,6 @@ def get_samples_backgrounds_tarball(
 
     if check_exist:
         assert os.path.isfile(backgrounds_tar)
-        # TODO: check inside tarball
 
     return backgrounds_tar
 
