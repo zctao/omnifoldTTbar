@@ -32,12 +32,14 @@ source omnifoldTop/setup.sh
 echo 'Preparing input datasets'
 mkdir -p {INPUTDIR}
 for fname_tar in {TARBALLLIST}; do
+    echo "Extracting input datasets from ${{fname_tar}}"
     tar -xf ${{fname_tar}} -C {INPUTDIR}/
 done
 
 # Prepare config
 echo 'Copying run config'
 mkdir configs
+echo "Copying {RUNCONFIG} to configs/run_config.json"
 cp {RUNCONFIG} configs/run_config.json
 
 # Prepare output directory
@@ -49,10 +51,12 @@ echo 'Start running unfolding...'
 python omnifoldTop/run_unfold.py configs/run_config.json
 echo 'Unfolding done!'
 
-echo "Collect and copy back the outputs"
+echo "Collect output files in {OUTPUTDIR} and copy them to {RESULT}"
 cd {OUTPUTDIR}
 tar -cf {RESULT} *
 cd $WORKDIR
 
+echo "All done!"
 deactivate
+
 echo exit code $?
