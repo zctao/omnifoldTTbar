@@ -1088,14 +1088,11 @@ def write_config_stress(
     if not fpath_reweights:
         print("WARNING cannot generate run config for data induced stress test: no external weight files are provided.")
     else:
-        # get the real paths
-        fpath_reweights_real = [os.path.realpath(fp) for fp in fpath_reweights]
-
         # reweighted signal MC as pseudo-data
         stress_data_cfg = stress_common_cfg.copy()
         stress_data_cfg.update({
             "outputdir": os.path.join(output_top_dir, f"stress_data"),
-            "weight_data": f"external:{','.join(fpath_reweights_real)}",
+            "weight_data": f"external:{','.join(fpath_reweights)}",
             "weight_mc": "nominal"
         })
 
@@ -1126,7 +1123,7 @@ def write_config_stress(
             "correct_acceptance": True,
             "truth_known": False,
             "weight_data": "nominal",
-            "weight_mc": f"external:{','.join(fpath_reweights_real)}"
+            "weight_mc": f"external:{','.join(fpath_reweights)}"
         })
 
         # write run config to file
@@ -1155,9 +1152,6 @@ def write_config_stress_binned(
     if not fpath_reweights:
         print("ERROR cannot generate run config for data induced stress test: no external weight files are provided.")
     else:
-        # get the real paths
-        fpath_reweights_real = [os.path.realpath(fp) for fp in fpath_reweights]
-
         sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
         if batch_job:
             sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
@@ -1184,7 +1178,7 @@ def write_config_stress_binned(
                 "truth_known": True,
                 "observables": [obs],
                 "outputdir": os.path.join(output_dir, obs),
-                "weight_data": f"external:{','.join(fpath_reweights_real)}",
+                "weight_data": f"external:{','.join(fpath_reweights)}",
                 "weight_mc": "nominal"
             })
 
@@ -1216,10 +1210,8 @@ def createRun2Config(
 
     # get the real paths of the sample directory and output directory
     sample_local_dir = os.path.expanduser(sample_local_dir)
-    sample_local_dir = os.path.realpath(sample_local_dir)
 
     output_top_dir = os.path.expanduser(output_top_dir)
-    output_top_dir = os.path.realpath(output_top_dir)
 
     # in case outname_config comes with an extension
     outname_config = os.path.splitext(outname_config)[0]
