@@ -53,6 +53,14 @@ echo 'Unfolding done!'
 
 echo "Collect output files in {OUTPUTDIR} and copy them to {RESULT}"
 cd {OUTPUTDIR}
+
+# check if the result directory exists
+RESULTDIR="$(dirname {RESULT})"
+if [ ! -d "$RESULTDIR" ]; then
+    echo "Create result directory $RESULTDIR"
+    mkdir -p $RESULTDIR
+fi
+
 tar -cf {RESULT} *
 cd $WORKDIR
 
