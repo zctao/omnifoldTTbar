@@ -430,14 +430,14 @@ class OmniFoldTTbar():
         # plot variable and event weight distributions for training
         if plot_status:
             plotter.plot_training_inputs_step1(
-                os.path.join(self.outdir, "Train_step1"),
+                os.path.join(self.outdir, "plots", "Train_step1"),
                 self.varnames_reco,
                 X_data, X_sim[passcut_sim], X_bkg,
                 w_data, w_sim[passcut_sim], w_bkg
                 )
 
             plotter.plot_training_inputs_step2(
-                os.path.join(self.outdir, "Train_step2"),
+                os.path.join(self.outdir, "plots", "Train_step2"),
                 self.varnames_truth,
                 X_gen[passcut_gen],
                 w_gen[passcut_gen]

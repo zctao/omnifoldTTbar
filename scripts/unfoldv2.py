@@ -126,26 +126,26 @@ def unfold(**parsed_args):
 
         corr_data = unfolder.handle_obs.get_correlations(unfolder.varnames_reco)
         plotter.plot_correlations(
-            os.path.join(unfolder.outdir, "InputCorr_data"), corr_data,
+            os.path.join(unfolder.outdir, "plots", "InputCorr_data"), corr_data,
             print_bincontents=True
         )
 
         if parsed_args['truth_known']:
             corr_truth = unfolder.handle_obs.get_correlations(unfolder.varnames_truth)
             plotter.plot_correlations(
-                os.path.join(unfolder.outdir, "InputCorr_truth"), corr_truth,
+                os.path.join(unfolder.outdir, "plots", "InputCorr_truth"), corr_truth,
                 print_bincontents=True
             )
 
         corr_sim = unfolder.handle_sig.get_correlations(unfolder.varnames_reco)
         plotter.plot_correlations(
-            os.path.join(unfolder.outdir, "InputCorr_sim"), corr_sim,
+            os.path.join(unfolder.outdir, "plots", "InputCorr_sim"), corr_sim,
             print_bincontents=True
         )
 
         corr_gen = unfolder.handle_sig.get_correlations(unfolder.varnames_truth)
         plotter.plot_correlations(
-            os.path.join(unfolder.outdir, "InputCorr_gen"), corr_gen,
+            os.path.join(unfolder.outdir, "plots", "InputCorr_gen"), corr_gen,
             print_bincontents=True
         )
 
@@ -153,7 +153,7 @@ def unfold(**parsed_args):
         logger.info(f"Plot variable correlations after unfolding")
         corr_unf = unfolder.get_correlations_unfolded(unfolder.varnames_truth)
         plotter.plot_correlations(
-            os.path.join(unfolder.outdir, "OutputCorr_unf"), corr_unf,
+            os.path.join(unfolder.outdir, "plots", "OutputCorr_unf"), corr_unf,
             print_bincontents=True
         )
 
