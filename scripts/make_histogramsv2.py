@@ -965,7 +965,7 @@ def make_histograms(
     compute_metrics = False,
     plot_verbosity = 0,
     verbose = False,
-    apply_corrections = True,
+    apply_corrections = False,
     filepaths_unmatched = []
     ):
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
@@ -1100,6 +1100,8 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--filepaths-unmatched", 
                         type=str, nargs='+', action=util.ParseEnvVar, default=[],
                         help="File paths to the signal MC samples that are not truth matched. If not provided, infer from signal MC samples names.")
+    parser.add_argument("-c", "--apply-corrections", action='store_true',
+                        help="If True, apply binned efficiency corrections.")
 
     args = parser.parse_args()
 
