@@ -2,9 +2,9 @@
 timestamp=${1:-'latest'}
 subcampaigns=${2:-'mc16a mc16d mc16e'}
 
-sample_dir=${DATA_DIR}/NtupleTT/20221221
-outdir_rw=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/Reweight/$timestamp
-outdir_test=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/StressTests/$timestamp
+sample_dir=${DATA_DIR}/ntuplerTT/latest
+outdir_rw=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/Reweight/$timestamp
+outdir_test=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/StressTests/$timestamp
 
 observables_stress='th_pt mtt ptt'
 observables_test='mtt ptt th_pt tl_pt ytt th_y tl_y'

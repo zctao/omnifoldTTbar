@@ -2,8 +2,8 @@
 timestamp=${1:-'latest'}
 subcampaigns=${2:-'mc16a mc16d mc16e'}
 
-sample_dir=${DATA_DIR}/NtupleTT/20221221
-outdir=${DATA_DIR}/OmniFoldOutputs//Run2TTbarXs/Nominal_woacc/$timestamp
+sample_dir=${DATA_DIR}/ntuplerTT/latest
+outdir=${DATA_DIR}/OmniFoldOutputs//Run2TTbarXs_MINI382/Nominal_woacc/$timestamp
 
 observables='mtt ptt th_pt tl_pt ytt th_y tl_y'
 observables_multidim='ptt_vs_mtt th_pt_vs_mtt ytt_abs_vs_mtt ptt_vs_ytt_abs mtt_vs_ytt_abs mtt_vs_ptt_vs_ytt_abs mtt_vs_th_pt_vs_th_y_abs mtt_vs_th_pt_vs_ytt_abs mtt_vs_th_y_abs_vs_ytt_abs'
@@ -30,9 +30,7 @@ echo
 echo "Make histograms"
 result_dir=${outdir}/nominal
 
-python ${SOURCE_DIR}/scripts/make_histograms.py ${result_dir} \
+python ${SOURCE_DIR}/scripts/make_histogramsv2.py ${result_dir} \
     --binning-config ${SOURCE_DIR}/configs/binning/bins_ttdiffxs.json \
-    --observables $observables \
-    --include-ibu --compute-metrics -pp -v \
-    --observables-multidim ${observables_multidim}
-    # --binned-noflow
+    --observables ${observables} ${observables_multidim} \
+    --include-ibu --compute-metrics -pp -v

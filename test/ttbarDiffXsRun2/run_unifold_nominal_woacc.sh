@@ -2,8 +2,8 @@
 timestamp=${1:-'latest'}
 subcampaigns=${2:-'mc16a mc16d mc16e'}
 
-sample_dir=${DATA_DIR}/NtupleTT/20221221
-outdir=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/NominalUniFold_wacc/$timestamp
+sample_dir=${DATA_DIR}/ntuplerTT/latest
+outdir=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/NominalUniFold_woacc/$timestamp
 
 observables='mtt ptt th_pt tl_pt ytt th_y tl_y'
 
@@ -34,9 +34,8 @@ for obs in ${observables[@]}; do
 
     result_dir=${outdir}/$obs/nominal
 
-    python ${SOURCE_DIR}/scripts/make_histograms.py ${result_dir} \
+    python ${SOURCE_DIR}/scripts/make_histogramsv2.py ${result_dir} \
         --binning-config ${SOURCE_DIR}/configs/binning/bins_ttdiffxs.json \
         --observables $obs \
         --include-ibu --compute-metrics -pp -v
-        # --binned-noflow
 done

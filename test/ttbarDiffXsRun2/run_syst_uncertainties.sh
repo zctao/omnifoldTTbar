@@ -2,8 +2,8 @@
 timestamp=${1:-'latest'}
 subcampaigns=${2:-'mc16a mc16d mc16e'}
 
-sample_dir=${DATA_DIR}/NtupleTT/20221221
-outdir=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/Uncertainties/$timestamp
+sample_dir=${DATA_DIR}/ntuplerTT/latest
+outdir=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/Uncertainties/$timestamp
 
 observables='mtt ptt th_pt tl_pt ytt th_y tl_y'
 observables_multidim='ptt_vs_mtt th_pt_vs_mtt ytt_abs_vs_mtt ptt_vs_ytt_abs mtt_vs_ytt_abs mtt_vs_ptt_vs_ytt_abs mtt_vs_th_pt_vs_th_y_abs mtt_vs_th_pt_vs_ytt_abs mtt_vs_th_y_abs_vs_ytt_abs'
@@ -40,7 +40,8 @@ python ${SOURCE_DIR}/scripts/ttbarDiffXsRun2/run_uncertainties.py \
     -r ${outdir} \
     -v \
     histogram \
-    --observables-multidim ${observables_multidim}
+    --binning-config ${SOURCE_DIR}/configs/binning/bins_ttdiffxs.json \
+    --observables ${observables} ${observables_multidim}
 
 #####
 #echo

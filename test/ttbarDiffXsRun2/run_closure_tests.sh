@@ -2,8 +2,8 @@
 timestamp=${1:-'latest'}
 subcampaigns=${2:-'mc16a mc16d mc16e'}
 
-sample_dir=${DATA_DIR}/NtupleTT/20221221
-output_dir=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/ClosureTests/$timestamp
+sample_dir=${DATA_DIR}/ntuplerTT/latest
+output_dir=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/ClosureTests/$timestamp
 
 observables='mtt ptt th_pt tl_pt ytt th_y tl_y'
 

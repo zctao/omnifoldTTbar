@@ -160,7 +160,7 @@ def run(args):
 
 def histogram(args):
     logger.info("Make histograms")
-    from make_histograms import make_histograms
+    from make_histogramsv2 import make_histograms
 
     # job status
     if not os.path.isfile(args.job_file):
@@ -183,7 +183,6 @@ def histogram(args):
             ufdir,
             args.binning_config,
             observables = args.observables,
-            observables_multidim = args.observables_multidim,
             observable_config = args.observable_config,
             include_ibu = True
         )
@@ -310,9 +309,6 @@ if __name__ == "__main__":
     parser_hist.add_argument(
         "--observables", nargs='+', default=[],
         help="List of observables to make histograms. If not provided, use the same ones from the unfolding results")
-    parser_hist.add_argument(
-        "--observables-multidim", nargs='+', default=[],
-        help="List of observables to make multi-dimension histograms.")
     parser_hist.add_argument(
         "--observable-config", type=str, action=util.ParseEnvVar,
         default="${SOURCE_DIR}/configs/observables/vars_ttbardiffXs_pseudotop.json",

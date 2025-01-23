@@ -2,13 +2,13 @@
 timestamp=${1:-'latest'}
 subcampaigns=${2:-'mc16a mc16d mc16e'}
 
-sample_dir=${DATA_DIR}/NtupleTT/20221221
-outdir_test=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/GridSearch/$timestamp
+sample_dir=${DATA_DIR}/ntuplerTT/latest
+outdir_test=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/GridSearch/$timestamp
 
 observables='mtt ptt th_pt tl_pt ytt th_y tl_y'
 
 # Uncomment the following if wish to rerun reweighting
-#outdir_rw=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs/Reweight/$timestamp
+#outdir_rw=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/Reweight/$timestamp
 
 #python ${SOURCE_DIR}/scripts/ttbarDiffXsRun2/reweightDataStress.py \
 #    ${sample_dir} ${outdir_rw}/nnrw \
@@ -18,7 +18,7 @@ observables='mtt ptt th_pt tl_pt ytt th_y tl_y'
 #fpath_reweights=${outdir_rw}/nnrw/reweights.h5
 
 # or use the previous results
-fpath_reweights=${DATA_DIR}/OmniFoldOutputs/Reweight/2023Aug24_mc16a/nnrw/reweights.h5
+fpath_reweights=${DATA_DIR}/OmniFoldOutputs/Run2TTbarXs_MINI382/Reweight/latest/nnrw/reweights.h5
 
 # networks to scan
 networks="dense_100x3 dense_50x3 dense_10x3 dense_100x1 dense_1000x3 dense_100x10 dense_10x1 dense_50x1 dense_1000x1 dense_10x10 dense_50x10 dense_1000x10"
