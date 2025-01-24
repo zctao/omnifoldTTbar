@@ -78,6 +78,7 @@ def generate_slurm_jobs(
 
     job_str = job_str.format_map({
         "USEREMAIL" : email,
+        "LOGFILE" : os.path.join(outdir, "slurm-%j.log"),
         "TARBALLLIST" : " ".join(tarballs_set), # remove duplicates
         "RUNCONFIG" : config_name,
         "INPUTDIR" : inputdir_job,
