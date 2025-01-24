@@ -25,7 +25,7 @@ def configGPUs(gpu=None, limit_gpu_mem=False, verbose=0):
     # tensorflow configuration
     # device placement
     tf.config.set_soft_device_placement(True)
-    tf.debugging.set_log_device_placement(verbose > 0)
+    #tf.debugging.set_log_device_placement(verbose > 0)
 
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if not gpus:
