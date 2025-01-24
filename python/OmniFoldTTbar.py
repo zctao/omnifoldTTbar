@@ -456,7 +456,7 @@ class OmniFoldTTbar():
 
         self.unfolded_weights = self.file_uw.create_dataset(
             "unfolded_weights", shape=uw_shape, chunks = (1,)+uw_shape_per_run,
-            dtype=np.float)
+            dtype=np.float32)
 
         for ir in range(nruns):
             logger.info(f"Run #{ir}")
