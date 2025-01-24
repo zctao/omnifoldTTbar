@@ -76,11 +76,4 @@ if __name__ == "__main__":
 
     fpath_run_config = sys.argv[1]
 
-    try:
-        run_unfold(fpath_run_config)
-    except Exception as ex:
-        logger.setLevel(logging.DEBUG)
-        reportMemUsage(logger)
-        reportGPUMemUsage(logger)
-        logger.error(f"Unfold failed: {ex}")
-        sys.exit(1)
+    run_unfold(fpath_run_config)
