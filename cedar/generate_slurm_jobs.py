@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     parser.add_argument('config_name', type=str, help='The run configuration file')
     parser.add_argument('-d', '--sample-dir', type=str, action=util.ParseEnvVar,
-                        default="${DATA_DIR}/NtupleTT/latest",
+                        default="${DATA_DIR}/ntuplerTT/latest",
                         help='Top direcotry for sample files')
     parser.add_argument('-t', '--sample-tarballs', type=str, nargs='+', required=True,
                         help="A list of file paths to input dataset tarballs")
