@@ -35,7 +35,7 @@ def plot_distributions_unfold(
     hist_truth = histograms_d[obs].get('truth')
     hist_ibu = histograms_d[obs].get('ibu') if include_ibu else None
     if include_ibu and hist_ibu is None:
-        logger.warn("Cannot find histogram 'ibu'")
+        logger.warning("Cannot find histogram 'ibu'")
 
     ###
     # print metrics on the plot
@@ -109,8 +109,10 @@ def plot_distributions_reco(obs, histograms_d, obsConfig_d, outputdir,):
     style_data = plotter.data_style.copy()
     style_data.update({"xerr":True})
 
-    # update axis labels
-    set_labels(obs_list, hist_sim[-1], obsConfig_d)
+    # update axis labels for all histograms in hist_sim
+    # make sure the x-axis labels are the same because we need to stack them
+    for hist in hist_sim:
+        set_labels(obs_list, hist, obsConfig_d)
 
     plotter.plot_histograms_and_ratios(
         figname_reco,
@@ -264,7 +266,7 @@ def plot_histograms_from_dict(
         logger.info(obs)
 
         if not obs in histograms_d:
-            logger.warn(f"No histograms for observable {obs}")
+            logger.warning(f"No histograms for observable {obs}")
             continue
 
         ###
