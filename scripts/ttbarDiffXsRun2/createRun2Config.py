@@ -124,10 +124,10 @@ def get_samples_backgrounds(
         else:
             sample_name = f"{bkg}/{syst_type}"
 
-            #samples_bkg += [os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.root") for e in subcampaigns]
+            #samples_bkg += [os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.h5") for e in subcampaigns]
             samples_b = []
             for e in subcampaigns:
-                b = glob.glob(os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.root"))
+                b = glob.glob(os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.h5"))
                 b.sort()
                 samples_b += b
             samples_bkg += samples_b
