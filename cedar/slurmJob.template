@@ -15,11 +15,8 @@ source "${{HOME}}/venv_tf/bin/activate"
 echo "HOSTNAME=$HOSTNAME"
 nvidia-smi
 
-# Move to the node local disk
-cd ${{SLURM_TMPDIR}}
-
-# Make a work directory
-WORKDIR=$USER/${{SLURM_JOB_ID}}
+# Make a work directory on the node local disk
+WORKDIR=${{SLURM_TMPDIR}}/$USER/${{SLURM_JOB_ID}}
 mkdir -p $WORKDIR
 cd $WORKDIR
 echo WORKDIR=$WORKDIR
