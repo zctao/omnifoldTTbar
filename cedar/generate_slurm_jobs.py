@@ -8,6 +8,7 @@ def generate_slurm_jobs(
     sample_dir, # top direcotry for sample files
     sample_tarballs, # a list of file paths to input dataset tarballs
     email = os.getenv('USER')+'@phas.ubc.ca', # for now
+    account = "def-alister",
     output_name = None, # slurm job file name,
     check_tarfiles = True, # if True, check if all input files are available in tarballs
     ):
@@ -77,6 +78,7 @@ def generate_slurm_jobs(
         assert set(sample_files_config) <= set(all_sample_files)
 
     job_str = job_str.format_map({
+        'ACCOUNT' : account,
         "USEREMAIL" : email,
         "LOGFILE" : os.path.join(outdir, "slurm-%j.log"),
         "TARBALLLIST" : " ".join(tarballs_set), # remove duplicates
@@ -101,6 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--sample-tarballs', type=str, nargs='+', required=True,
                         help="A list of file paths to input dataset tarballs")
     parser.add_argument('-e', '--email', type=str, action=util.ParseEnvVar, default="${USER}@phas.ubc.ca", help="Email address for job notifications")
+    parser.add_argument('-a', '--account', type=str, default="def-alister", help="Slurm account")
     parser.add_argument('-o', '--output-name', type=str, help="Slurm job file name")
 
     args = parser.parse_args()
