@@ -71,11 +71,12 @@ def get_samples_signal(
 
     samples_sig = []
     for e in subcampaigns:
-        s = glob.glob(os.path.join(sample_dir, f"{sample_name}/{syst_type}/{e}/ttbar_*_pseudotop_parton_ljets.h5"))
+        s_wildcard = os.path.join(sample_dir, f"{sample_name}/{syst_type}/{e}/ttbar_*_pseudotop_parton_ljets.h5")
+        s = glob.glob(s_wildcard)
+        assert s, f"Signal sample empty: {s_wildcard}"
         s.sort()
         samples_sig += s
 
-    assert samples_sig, "Signal sample empty"
     if check_exist:
         for f in samples_sig:
             assert os.path.isfile(f), "Not all signal sample files exist"
@@ -127,7 +128,9 @@ def get_samples_backgrounds(
             #samples_bkg += [os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.h5") for e in subcampaigns]
             samples_b = []
             for e in subcampaigns:
-                b = glob.glob(os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.h5"))
+                b_wildcard = os.path.join(sample_dir, f"{sample_name}/{e}/{bkg}_*_pseudotop_ljets.h5")
+                b = glob.glob(b_wildcard)
+                assert b, f"Background sample empty: {b_wildcard}"
                 b.sort()
                 samples_b += b
             samples_bkg += samples_b
