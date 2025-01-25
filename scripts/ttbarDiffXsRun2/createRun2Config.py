@@ -71,7 +71,7 @@ def get_samples_signal(
 
     samples_sig = []
     for e in subcampaigns:
-        s_wildcard = os.path.join(sample_dir, f"{sample_name}/{syst_type}/{e}/ttbar_*_pseudotop_parton_ljets.h5")
+        s_wildcard = os.path.join(sample_dir, f"{sample_name}/{syst_type}/{e}/ttbar_*_pseudotop*_ljets.h5")
         s = glob.glob(s_wildcard)
         assert s, f"Signal sample empty: {s_wildcard}"
         s.sort()
