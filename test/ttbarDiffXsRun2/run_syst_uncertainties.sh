@@ -22,6 +22,7 @@ python ${SOURCE_DIR}/scripts/ttbarDiffXsRun2/run_uncertainties.py \
     generate \
     --observables ${observables} \
     -e ${subcampaigns} # --config-string '{"match_dR":0.8}'
+    -b
 
 echo
 echo "Run unfolding"
