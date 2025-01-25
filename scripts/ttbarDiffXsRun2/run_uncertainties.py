@@ -372,16 +372,4 @@ if __name__ == "__main__":
         os.makedirs(os.path.dirname(args.job_file))
 
     # call the function
-    try:
-        args.func(args)
-    except Exception as ex:
-        logger.setLevel(logging.DEBUG)
-        util.reportMemUsage(logger)
-
-        # Report GPU usage only if it is needed
-        if args.func == run:
-            from modelUtils import reportGPUMemUsage
-            reportGPUMemUsage(logger)
-
-        logger.error(ex)
-        sys.exit(1)
+    args.func(args)
