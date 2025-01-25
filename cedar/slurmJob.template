@@ -62,6 +62,10 @@ fi
 tar -cf {RESULT} *
 cd $WORKDIR
 
+echo "Cleaning up..."
+cd ${{SLURM_TMPDIR}}
+rm -rf $WORKDIR
+
 echo "All done!"
 deactivate
 
