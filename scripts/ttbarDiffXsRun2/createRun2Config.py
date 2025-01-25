@@ -135,7 +135,7 @@ def get_samples_backgrounds(
                 samples_b += b
             samples_bkg += samples_b
 
-    assert samples_bkg, "Background sample empty"
+    assert samples_bkg, f"Background sample empty: {backgrounds}"
     if check_exist:
         for f in samples_bkg:
             assert os.path.isfile(f), "Not all background sample files exist"
@@ -597,10 +597,6 @@ def write_config_systematics_modelling(
     for syst in get_systematics(systematics_keywords, syst_type='Modelling'):
         print(syst)
 
-        # for now
-        if syst in ['lineshape_madspin', 'matching_pp8pthard']:
-            print(f"WARNING: {syst} not yet implemented")
-
         # alternative sample as the pseudo data
         signal_alt = get_samples_signal(
             sample_local_dir, 
@@ -665,6 +661,7 @@ def write_config_systematics_background(
 
     # background modelling
     for syst in get_systematics(systematics_keywords, syst_type="BackgroundModelling"):
+        print(syst)
         # singleTop
         if syst == 'singleTop_tW_DS_dyn':
             # replace 'singleTop_tW_DR_dyn' in the nominal list
@@ -709,6 +706,7 @@ def write_config_systematics_background(
 
     # background normalization
     for syst in get_systematics(systematics_keywords, syst_type="BackgroundNorm"):
+        print(syst)
         bkg_prefix = syst.split('_')[0]
         f_rescale = float(syst.split('_')[-1])
 
