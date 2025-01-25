@@ -1292,7 +1292,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-d", "--sample-dir", type=str, action=util.ParseEnvVar,
-                        default="${DATA_DIR}/NtupleTT/latest",
+                        default="${DATA_DIR}/ntuplerTT/latest",
                         help="Sample directory")
     parser.add_argument("-n", "--config-name", type=str,
                         default="configs/run/ttbarDiffXsRun2/runCfg_run2_ljets")

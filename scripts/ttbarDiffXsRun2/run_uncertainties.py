@@ -273,7 +273,7 @@ if __name__ == "__main__":
 
     parser_gen.add_argument(
         "--sample-dir", type=str, action=util.ParseEnvVar,
-        default="${DATA_DIR}/NtupleTT/20221221",
+        default="${DATA_DIR}/ntuplerTT/latest",
         help="Sample directory")
     parser_gen.add_argument(
         "-e", "--subcampaigns", nargs='+', 
