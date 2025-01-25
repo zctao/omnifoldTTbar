@@ -10,12 +10,22 @@ def generate_slurm_jobs(
     email = os.getenv('USER')+'@phas.ubc.ca', # for now
     account = "def-alister",
     output_name = None, # slurm job file name,
+    output_dir = None, # output directory
     check_tarfiles = True, # if True, check if all input files are available in tarballs
     ):
 
+    if output_dir is None:
+        # creat a 'slurm' directory in the same directory as the config file
+        output_dir = os.path.join(os.path.dirname(config_name), 'slurm')
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+
     if not output_name:
         # set it to the same as config_name but with a different extension
-        output_name = os.path.splitext(config_name)[0]+'.slurm'
+        output_name = os.path.splitext(os.path.basename(config_name))[0]
+
+    jobfile_name = os.path.join(output_dir, output_name+'.slurm')
+    jobcfg_name = os.path.join(output_dir, output_name+'.json')
 
     # Load run config
     runcfg = util.read_dict_from_json(config_name, parse_env=False)
@@ -43,8 +53,8 @@ def generate_slurm_jobs(
     # replace the output directory in the config with a local directory on the node
     runcfg['outputdir'] = outputdir_job
 
-    # overwrite the old run config file
-    util.write_dict_to_json(runcfg, config_name)
+    # write the new config file
+    util.write_dict_to_json(runcfg, jobcfg_name)
 
     # Load slurm job template
     slurm_template = os.path.expandvars("${SOURCE_DIR}/cedar/slurmJob.template")
@@ -82,14 +92,14 @@ def generate_slurm_jobs(
         "USEREMAIL" : email,
         "LOGFILE" : os.path.join(outdir, "slurm-%j.log"),
         "TARBALLLIST" : " ".join(tarballs_set), # remove duplicates
-        "RUNCONFIG" : config_name,
+        "RUNCONFIG" : jobcfg_name,
         "INPUTDIR" : inputdir_job,
         "OUTPUTDIR" : outputdir_job,
         "RESULT" : result_tarball
     })
 
     # write slurm job file
-    with open(output_name, 'w') as fout:
+    with open(jobfile_name, 'w') as fout:
         fout.write(job_str)
 
 if __name__ == '__main__':
@@ -105,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--email', type=str, action=util.ParseEnvVar, default="${USER}@phas.ubc.ca", help="Email address for job notifications")
     parser.add_argument('-a', '--account', type=str, default="def-alister", help="Slurm account")
     parser.add_argument('-o', '--output-name', type=str, help="Slurm job file name")
+    parser.add_argument('--output-dir', type=str, help="Output directory")
 
     args = parser.parse_args()
 
