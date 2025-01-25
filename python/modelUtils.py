@@ -247,7 +247,7 @@ def train_model(model, X, Y, w, callbacks=[], figname='', batch_size=32768, epoc
     train_dictionary, val_dictionary = {}, {}
     train_y_dictionary, val_y_dictionary = {}, {}
 
-    train_w, val_w = [], []
+    train_w, val_w = {}, {}
 
     random_state = rng.integers(0, 2**16)
     X_train, X_val, Y_train, Y_val = train_test_split(X, Y, random_state=random_state)
@@ -266,8 +266,8 @@ def train_model(model, X, Y, w, callbacks=[], figname='', batch_size=32768, epoc
             val_dictionary[_layer_name(i, "input")] = X_val
             train_y_dictionary[_layer_name(i, "output")] = Y_train
             val_y_dictionary[_layer_name(i, "output")] = Y_val
-            train_w.append(tf.convert_to_tensor(w_train))
-            val_w.append(tf.convert_to_tensor(w_val))
+            train_w[_layer_name(i, "output")] = tf.convert_to_tensor(w_train)
+            val_w[_layer_name(i, "output")] = tf.convert_to_tensor(w_val)
 
     fitargs = {'callbacks': callbacks, 'epochs': epochs, 'verbose': verbose, 'batch_size': batch_size}
     model.fit(train_dictionary, train_y_dictionary, sample_weight=train_w, validation_data=(val_dictionary, val_y_dictionary, val_w), **fitargs)
