@@ -125,8 +125,8 @@ def generate(args):
             subcampaigns = args.subcampaigns,
             systematics_keywords = systnames,
             common_cfg = common_unc_cfg,
-            category = 'ljets',
-            run_list = ['systematics']
+            run_list = ['systematics'],
+            batch_job = args.batch_job
         )
 
 def run(args):
@@ -289,6 +289,9 @@ if __name__ == "__main__":
     parser_gen.add_argument(
         "--config-string", type=str,
         help="String in JSON format to be parsed for updating run configs")
+    parser_gen.add_argument(
+        "-b", "--batch-job", action='store_true',
+        help="If True, generate batch job scripts")
 
     parser_gen.set_defaults(func=generate)
 
