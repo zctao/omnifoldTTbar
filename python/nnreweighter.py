@@ -61,14 +61,14 @@ def _train_impl(
 
     if model_filepath_load:
         try:
-            classifier.load_weights(model_filepath_load)
-            logger.info(f"Load model from {model_filepath_load}")
+            classifier.load_weights(model_filepath_load+".weights.h5")
+            logger.info(f"Load model from {model_filepath_load}.weights.h5")
         except:
             if resume_training:
-                logger.debug(f"Cannot load model from {model_filepath_load}. Continue to train models from here.")
+                logger.debug(f"Cannot load model from {model_filepath_load}.weights.h5. Continue to train models from here.")
                 skip_training = False
             else:
-                logger.critical(f"Cannot load model from {model_filepath_load}")
+                logger.critical(f"Cannot load model from {model_filepath_load}.weights.h5")
                 raise RuntimeError("Model loading failure")
 
     if skip_training:
@@ -96,8 +96,8 @@ def _train_impl(
         logger.info("Training done")
 
         if model_filepath_save:
-            logger.info("Save model to " + model_filepath_save)
-            classifier.save_weights(model_filepath_save)
+            logger.info("Save model to " + model_filepath_save+".weights.h5")
+            classifier.save_weights(model_filepath_save+".weights.h5")
 
     return classifier
 
