@@ -55,7 +55,7 @@ def get_samples_data_tarball(
     data_tar = os.path.join(tarball_dir, 'nominal.tar')
 
     if check_exist:
-        assert os.path.isfile(data_tar)
+        assert os.path.isfile(data_tar), f"Data sample tarball does not exist: {data_tar}"
 
     return data_tar
 
@@ -103,7 +103,7 @@ def get_samples_signal_tarball(
         signal_tar = os.path.join(tarball_dir, f"{syst_type}.tar")
 
     if check_exist:
-        assert os.path.isfile(signal_tar)
+        assert os.path.isfile(signal_tar), f"Signal sample tarball does not exist: {signal_tar}"
 
     return signal_tar
 
@@ -157,7 +157,7 @@ def get_samples_backgrounds_tarball(
     # (alternative background samples are included in the same tarball as the nominal samples for now)
 
     if check_exist:
-        assert os.path.isfile(backgrounds_tar)
+        assert os.path.isfile(backgrounds_tar), f"Background sample tarball does not exist: {backgrounds_tar}"
 
     return backgrounds_tar
 
