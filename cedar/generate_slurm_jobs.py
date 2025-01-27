@@ -3,6 +3,8 @@ import tarfile
 
 import util
 
+from datahandler_base import filter_filepaths
+
 def generate_slurm_jobs(
     config_name, # file name of the run config
     sample_dir, # top direcotry for sample files
@@ -82,10 +84,13 @@ def generate_slurm_jobs(
             if not samples:
                 continue
 
-            sample_files_config += samples
+            # clean up the sample names
+            samples_clean = filter_filepaths(samples)[0]
+
+            sample_files_config += samples_clean
 
         # sample_files_config should be a subset of all_sample_files
-        assert set(sample_files_config) <= set(all_sample_files)
+        assert set(sample_files_config) <= set(all_sample_files), f"Missing files in tarballs: {set(sample_files_config) - set(all_sample_files)}"
 
     job_str = job_str.format_map({
         'ACCOUNT' : account,
