@@ -23,6 +23,7 @@ def compute_reco_distributions(
     datahandler_sig,
     datahandler_data = None,
     datahandler_bkg = None,
+    datahandler_databkg = None,
     absoluteValue = False,
     histograms_obs_d = {},
     ):
@@ -33,6 +34,12 @@ def compute_reco_distributions(
         histograms_obs_d['reco_data'] = datahandler_data.compute_histogram(
             variables, bins, absoluteValue=absoluteValue
         )
+
+        if datahandler_databkg is not None:
+            logger.debug(f" pseudo data background reco-level distribution )")
+            histograms_obs_d['reco_data'] += datahandler_databkg.compute_histogram(
+                variables, bins, absoluteValue=absoluteValue
+            )
 
     # background simulation
     if datahandler_bkg is not None:
@@ -778,7 +785,7 @@ def make_histograms_from_unfolder(
                 datahandler_sig = dh_sig,
                 datahandler_data = dh_obs,
                 datahandler_bkg = dh_bkg,
-                #datahandler_databkg = dh_obsbkg, FIXME
+                datahandler_databkg = dh_obsbkg,
                 absoluteValue = isAbsolute,
                 histograms_obs_d = histograms_d[obs]
             )
