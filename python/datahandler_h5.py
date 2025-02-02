@@ -40,7 +40,7 @@ def get_weight_variables(weight_type):
                 weight_comp = wname
                 break
 
-        if weight_syst == 'mc_generator_weights':
+        if weight_syst.startswith('mc_generator_weights'):
             weight_comp = 'weight_mc'
 
         if weight_comp is None: # something's wrong
