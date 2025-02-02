@@ -47,16 +47,28 @@ def reweight_samples(**parsed_args):
     ######
     # Load input data files
     logger.info(f"Load target samples: {' '.join(parsed_args['target'])}")
-    dh_target = getDataHandler(parsed_args['target'], varnames)
+    dh_target = getDataHandler(
+        parsed_args['target'],
+        varnames,
+        outputname = os.path.join(parsed_args['outputdir'], "target")
+    )
     logger.info(f"Total number of events in target: {len(dh_target)}")
 
     logger.info(f"Load source samples: {' '.join(parsed_args['source'])}")
-    dh_source = getDataHandler(parsed_args['source'], varnames)
+    dh_source = getDataHandler(
+        parsed_args['source'],
+        varnames,
+        outputname = os.path.join(parsed_args['outputdir'], "source")
+    )
     logger.info(f"Total number of events in source: {len(dh_source)}")
 
     if parsed_args['background']:
         logger.info(f"Load background samples: {' '.join(parsed_args['background'])}")
-        dh_bkg = getDataHandler(parsed_args['background'], varnames)
+        dh_bkg = getDataHandler(
+            parsed_args['background'],
+            varnames,
+            outputname = os.path.join(parsed_args['outputdir'], "bkg")
+        )
         logger.info(f"Total number of events in background: {len(dh_bkg)}")
     else:
         dh_bkg = None
