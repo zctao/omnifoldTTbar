@@ -125,9 +125,9 @@ def get_systematics(
 
                         wtype_var = "nominal"
                         if stype == "ScaleFactor":
-                            wtype_var = '_'.join(filter(None, ["weight", prefix, sname, f"{v}"]))+f":{i}"
+                            wtype_var = '_'.join(filter(None, ["weight", prefix, sname, f"{v}", f"{i}"]))
                         elif stype == "GenWeight":
-                            wtype_var = f"mc_generator_weights:{get_gen_weight_index(syst_var)}"
+                            raise RuntimeError("GenWeight with uncertainties as dict not supported")
 
                         systs.append(syst_var)
                         wtypes.append(wtype_var)
@@ -151,7 +151,7 @@ def get_systematics(
                     if stype == "ScaleFactor":
                         wtype_var = f"weight_{syst_var}"
                     elif stype == "GenWeight":
-                        wtype_var = f"mc_generator_weights:{get_gen_weight_index(syst_var)}"
+                        wtype_var = f"mc_generator_weights_{syst_var}:{get_gen_weight_index(syst_var)}"
 
                     systs.append(syst_var)
                     wtypes.append(wtype_var)

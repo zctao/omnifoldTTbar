@@ -482,14 +482,15 @@ def write_config_theory(
     for syst, wtype in zip(*get_systematics(systematics_keywords, syst_type='GenWeight', get_weight_types=True)):
         print(syst)
 
-        windex = int(wtype.split(':')[-1])
+        wname, windex = wtype.split(':')
+        windex = int(windex)
 
         samples_data, samples_signal = [], []
         tarballs = []
 
         if 'PDF4LHC' in syst: # PDF uncertainty
-            weight_data = f"mc_generator_weights:{get_gen_weight_index('PDF4LHC15_0')}"
-            weight_mc = wtype
+            weight_data = "mc_generator_weights_PDF4LHC15_0"
+            weight_mc = wname
 
             # loop over subcampaigns to rescale the sum of weights
             for era in subcampaigns:
@@ -514,7 +515,7 @@ def write_config_theory(
                     samples_signal += sig_era
 
         elif '_muR_' in syst or '_muF_' in syst or '_alphaS_' in syst: # ISR, FSR
-            weight_data = wtype
+            weight_data = wname
             weight_mc = 'nominal'
 
             # loop over subcampaigns to rescale the sum of weights
