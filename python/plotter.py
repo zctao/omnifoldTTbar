@@ -600,8 +600,11 @@ def draw_histograms_and_ratios(
     flow_style = 'none', # str, optional { "show", "sum", "hint", "none"}
     ):
 
-    ax = axes[0]
-    ax_ratio = axes[1] if hist_denominator else None
+    if hist_denominator is None:
+        ax = axes
+        ax_ratio = None
+    else:
+        ax, ax_ratio = axes
 
     if log_xscale:
         ax.set_xscale('log')
