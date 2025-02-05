@@ -332,7 +332,7 @@ def plot_histograms(
 
     # output directory
     if not outputdir:
-        outputdir = os.path.dirname(fpath_histograms)
+        outputdir = os.path.join(os.path.dirname(fpath_histograms), 'plots')
 
     # read histograms from the file
     logger.info(f"Read histograms from {fpath_histograms}")
