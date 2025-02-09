@@ -166,8 +166,15 @@ def reweight_samples(**parsed_args):
 
         # event weights
         weights_rw = file_rw.create_dataset(
-            parsed_args["weight_name"], data = dh_source.get_weights(valid_only=False)
-            )
+            parsed_args["weight_name"],
+            data = dh_source.get_weights(valid_only=False)
+        )
+
+        # truth level weights
+        weights_rw_mc = file_rw.create_dataset(
+            parsed_args["weight_name"]+"_mc",
+            data = dh_source.get_weights(reco_level=False, valid_only=False)
+        )
 
         # run weighting
         rw[:] = train_and_reweight(
@@ -191,6 +198,7 @@ def reweight_samples(**parsed_args):
 
         # update event weights
         weights_rw[pass_sel[:]] = w_source * rw[:]
+        weights_rw_mc[pass_sel[:]] *= rw[:]
 
     if parsed_args['plot_verbosity'] > 0:
         # plot train history
