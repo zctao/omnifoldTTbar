@@ -10,9 +10,9 @@ def reweightDataStress(
 
     data = r2c.get_samples_data(sample_dir, subcampaigns=subcampaigns)
     signal = r2c.get_samples_signal(sample_dir, subcampaigns=subcampaigns)
-    backgrounds = r2c.get_samples_backgrounds(sample_dir, subcampaigns=subcampaigns)
+    #backgrounds = r2c.get_samples_backgrounds(sample_dir, subcampaigns=subcampaigns)
 
-    args_list = ['-t']+data + ['-s']+signal + ['-b']+backgrounds
+    args_list = ['-t']+data + ['-s']+signal #+ ['-b']+backgrounds
     args_list += ['--observables'] + observables
     args_list += ['-o', output_dir]
     args_list += ['-n']
