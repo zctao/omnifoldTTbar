@@ -198,6 +198,34 @@ def plot_iteration_history(obs, histograms_d, obsConfig_d, outputdir):
     else:
         logger.warning(f"No 'unfolded_alliters' for observable {obs}")
 
+    # reco level
+    hists_reco_alliters = histograms_d[obs].get('reco_sig_alliters')
+
+    if hists_reco_alliters:
+        iteration_dir = os.path.join(outputdir, 'Iterations')
+        if not os.path.isdir(iteration_dir):
+            logger.info(f"Create directory {iteration_dir}")
+            os.makedirs(iteration_dir)
+
+        figname_alliters = os.path.join(iteration_dir, f"Reco_AllIterations_{obs}")
+        logger.info(f" Plot reco distributions at every iteration: {figname_alliters}")
+
+        hist_sig = histograms_d[obs].get('reco_sig')
+        hist_data = histograms_d[obs].get('reco_data')
+        hist_bkg = histograms_d[obs].get('reco_bkg')
+        hist_obs = hist_data + (-1 * hist_bkg) if hist_bkg else hist_data
+
+        obs_list = obs.split('_vs_')
+
+        plotter.plot_distributions_iteration(
+            figname_alliters,
+            hists_reco_alliters,
+            hist_sig,
+            hist_obs,
+            xlabel = obsConfig_d[obs_list[0]]['xlabel'],
+            ylabel = obsConfig_d[obs_list[0]]['ylabel']
+        )
+
 def plot_unfolded_allruns(obs, histograms_d, obsConfig_d, outputdir):
     hists_uf_allruns = histograms_d[obs].get("unfolded_allruns")
     if hists_uf_allruns is not None and len(hists_uf_allruns) > 1:

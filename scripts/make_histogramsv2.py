@@ -56,6 +56,28 @@ def compute_reco_distributions(
 
     return histograms_obs_d
 
+def compute_reco_distributions_alliters(
+    variables,
+    bins,
+    reco_weights_alliters,
+    datahandler_sig,
+    absoluteValue = False,
+    histograms_obs_d = {},
+    ):
+
+    if reco_weights_alliters is None:
+        return histograms_obs_d
+
+    weights_sig = datahandler_sig.get_weights(valid_only=True, reco_level=True)
+    reco_weights_alliters
+
+    histograms_obs_d['reco_sig_alliters'] = datahandler_sig.compute_histogram(
+        variables, bins, absoluteValue=absoluteValue,
+        weights = reco_weights_alliters * weights_sig
+    )
+
+    return histograms_obs_d
+
 def compute_truth_distributions(
     variables,
     bins,
@@ -752,6 +774,10 @@ def make_histograms_from_unfolder(
     unfolded_weights_all = unfolder.get_unfolded_weights(None, nruns) # shape: (nruns, niterations, nevents)
     unfolded_weights_nominal = np.median(unfolded_weights_all, axis=0) # shape: (niterations, nevents)
 
+    reco_weights_all = unfolder.get_reco_weights(None, nruns) # shape: (nruns, niterations, nevents)
+    reco_weights_nominal = np.median(reco_weights_all, axis=0) if reco_weights_all is not None else None
+    # shape: (niterations, nevents)
+
     ######
     # make histograms
     # binning
@@ -789,6 +815,15 @@ def make_histograms_from_unfolder(
                 absoluteValue = isAbsolute,
                 histograms_obs_d = histograms_d[obs]
             )
+
+            if all_iterations and reco_weights_nominal is not None:
+                compute_reco_distributions_alliters(
+                    vnames_reco, bins_reco,
+                    reco_weights_alliters = reco_weights_nominal,
+                    datahandler_sig = dh_sig,
+                    absoluteValue = isAbsolute,
+                    histograms_obs_d = histograms_d[obs]
+                )
 
         ###
         # truth level

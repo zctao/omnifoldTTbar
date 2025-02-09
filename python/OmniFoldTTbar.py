@@ -139,6 +139,8 @@ class OmniFoldTTbar():
         self.unfolded_weights = None
         # h5py file
         self.file_uw = None
+        # signal sample reco-level weights at each unfolding iteration
+        self.reco_weights = None
 
         # data handlers
         self.handle_obs = None
@@ -394,6 +396,7 @@ class OmniFoldTTbar():
         plot_status=False, # If True, make extra plots for monitoring/debugging
         resume_training=False, # If True, load trained models if available, continue to train for more runs/steps if needed
         dummy_value=-99.,
+        save_reco_weights = False
     ):
         """
         Run unfolding
@@ -458,6 +461,13 @@ class OmniFoldTTbar():
             "unfolded_weights", shape=uw_shape, chunks = (1,)+uw_shape_per_run,
             dtype=np.float32)
 
+        if save_reco_weights:
+            reco_w_shape_per_run = (niterations, np.count_nonzero(passcut_sim))
+            reco_w_shape = (nruns * modelUtils.n_models_in_parallel,) + reco_w_shape_per_run
+            self.reco_weights = self.file_uw.create_dataset(
+                "reco_weights", shape=reco_w_shape, chunks = (1,)+reco_w_shape_per_run,
+                dtype=np.float32)
+
         for ir in range(nruns):
             logger.info(f"Run #{ir}")
 
@@ -501,6 +511,7 @@ class OmniFoldTTbar():
                 feature_names_sim = self.varnames_reco,
                 feature_names_gen = self.varnames_truth,
                 output_dataset = self.unfolded_weights,
+                output_dataset_reco = self.reco_weights,
                 run_index = ir
             )
 
@@ -558,6 +569,27 @@ class OmniFoldTTbar():
             warr = self.unfolded_weights[:,iteration,:] # shape: (nruns, nevents)
         else:
             warr = self.unfolded_weights[:nruns,iteration,:] # shape: (nruns, nevents)
+
+        return warr
+
+    def get_reco_weights(
+        self,
+        iteration = -1, # If None, get all iterations
+        nruns = None, # Use weights from the number of runs. If None, use all available
+        ):
+
+        if self.reco_weights is None:
+            logger.warning("No reco-level weights available. Return None.")
+            return None
+
+        if iteration is None and nruns is None: # load everything
+            warr = self.reco_weights[:] # shape: (nruns, niterations, nevents)
+        elif iteration is None: # load all iterations
+            warr = self.reco_weights[:nruns,...] # shape: (nruns, niterations, nevents)
+        elif nruns is None: # load the specified iteration
+            warr = self.reco_weights[:,iteration,:] # shape: (nruns, nevents)
+        else:
+            warr = self.reco_weights[:nruns,iteration,:]
 
         return warr
 

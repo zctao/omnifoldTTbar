@@ -75,6 +75,7 @@ def omnifold(
     epochs=100,
     verbose=1,
     output_dataset=None, # hdf5 dataset for storing the event weights
+    output_dataset_reco=None, # hdf5 dataset for storing the reco level event weights
     run_index=0
     ):
     """
@@ -209,6 +210,10 @@ def omnifold(
             gc.collect()
 
         weights_pull /= np.mean(weights_pull, axis=1)[:,None]
+
+        if output_dataset_reco is not None:
+            output_dataset_reco[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :] = weights_pull[:, passcut_sim]
+
         reportGPUMemUsage(logger)
         gc.collect()
 

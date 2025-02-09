@@ -107,7 +107,8 @@ def unfold(**parsed_args):
             batch_size = parsed_args['batch_size'],
             plot_status = parsed_args['plot_verbosity'] >= 2,
             resume_training = parsed_args['resume'],
-            dummy_value = -99.
+            dummy_value = -99.,
+            save_reco_weights = parsed_args['reco_weights']
         )
 
     t_run_done = time.time()
@@ -285,6 +286,7 @@ def getArgsParser(arguments_list=None, print_help=False):
                         help="If True, load previously trained models and continue to run more steps if needed")
     parser.add_argument('--match-dR', type=float,
                         help="Require dR between the reco and truth tops less than the provided value")
+    parser.add_argument('--reco-weights', action='store_true', help="If True, save the reco-level weights as well in the output as a dataset named 'reco_weights'")
 
     if print_help:
         parser.print_help()
