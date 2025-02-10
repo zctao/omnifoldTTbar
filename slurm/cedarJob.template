@@ -24,7 +24,7 @@ echo WORKDIR=$WORKDIR
 
 # Get the code
 echo 'Getting source code from github'
-git clone --single-branch --branch cedar git@github.com:zctao/omnifoldTop.git
+git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
 source omnifoldTop/setup.sh
 
 # Prepare data
