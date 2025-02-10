@@ -1,0 +1,95 @@
+#!/bin/bash
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=48000M  
+#SBATCH --time=18:00:00  # DD-HH:MM:SS
+#SBATCH --mail-user={USEREMAIL}
+#SBATCH --mail-type=ALL
+#SBATCH --output={LOGFILE}
+
+echo "HOSTNAME=$HOSTNAME"
+CWD=$PWD
+
+DATADIR=/data/ztao
+
+# Make a work directory on the node local disk
+if [ -z "$SLURM_JOB_ID" ]; then
+    # SLURM_JOB_ID is not set: running in interactive mode
+    WORKDIR=/fast/$USER/$(date +"%s")
+else
+    WORKDIR=${{SLURM_TMPDIR}}/$USER/${{SLURM_JOB_ID}}
+fi
+
+echo WORKDIR=$WORKDIR
+mkdir -p $WORKDIR
+cd $WORKDIR
+
+# Prepare data
+echo 'Preparing input datasets'
+mkdir -p {INPUTDIR}
+
+tarlist=({TARBALLLIST})
+filelist=({INFILELIST})
+
+for i in "${{!tarlist[@]}}"; do
+    echo "Extracting input datasets from ${{tarlist[i]}} using file list ${{filelist[i]}}"
+    tar -C {INPUTDIR}/ -xf "${{tarlist[i]}}" -T "${{filelist[i]}}"
+done
+
+# Prepare output directory
+echo 'Creating local output directory: {OUTPUTDIR}'
+mkdir -p {OUTPUTDIR}
+
+# Prepare config
+echo 'Copying run config'
+mkdir configs
+echo "Copying {RUNCONFIG} to configs/run_config.json"
+cp {RUNCONFIG} configs/run_config.json
+
+# Get the code from github
+#echo 'Getting source code from github'
+#git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
+#REPOPATH=$WORKDIR/omnifoldTop
+# or use the local one
+REPOPATH=$HOME/topUnfolding/omnifoldTop
+source $REPOPATH/setup.sh
+
+# Run unfolding
+UNFOLDCMD=$(cat <<EOF
+echo 'Start running unfolding...'
+nvidia-smi
+python ${{SOURCE_DIR}}/run_unfold.py configs/run_config.json
+echo 'Unfolding done!'
+EOF
+)
+
+# Container
+CONTAINER=$DATADIR/containers/topOmniFold_tf270_dev.sif
+singularity exec --nv --bind $DATADIR $CONTAINER bash <<EOF || $(error="$?"; printf "Failed in $b\n" >&2; exit "$error")
+$UNFOLDCMD
+EOF
+
+cd {OUTPUTDIR}
+
+# check if the result directory exists
+RESULTDIR="$(dirname {RESULT})"
+if [ ! -d "$RESULTDIR" ]; then
+    echo "Create result directory $RESULTDIR"
+    mkdir -p $RESULTDIR
+fi
+
+echo "Collect output files in {OUTPUTDIR} and copy them to $RESULTDIR"
+
+#tar -cf {RESULT} *
+# or just copy
+rsync -azP * $RESULTDIR/.
+
+cd $WORKDIR
+
+echo "Cleaning up..."
+rm -rf $WORKDIR
+
+cd $CWD
+echo "All done!"
+
+echo exit code $?

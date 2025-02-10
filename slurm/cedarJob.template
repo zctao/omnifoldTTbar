@@ -30,9 +30,13 @@ source omnifoldTop/setup.sh
 # Prepare data
 echo 'Preparing input datasets'
 mkdir -p {INPUTDIR}
-for fname_tar in {TARBALLLIST}; do
-    echo "Extracting input datasets from ${{fname_tar}}"
-    tar -xf ${{fname_tar}} -C {INPUTDIR}/
+
+tarlist=({TARBALLLIST})
+filelist=({INFILELIST})
+
+for i in "${{!tarlist[@]}}"; do
+    echo "Extracting input datasets from ${{tarlist[i]}} using file list ${{filelist[i]}}"
+    tar -C {INPUTDIR}/ -xf "${{tarlist[i]}}" -T "${{filelist[i]}}"
 done
 
 # Prepare config

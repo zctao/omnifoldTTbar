@@ -42,23 +42,6 @@ def get_samples_data(
 
     return data
 
-def get_samples_data_tarball(
-    sample_dir, # top directory for sample files
-    tarball_dir = 'tarballs', # directory to look for sample tarball files
-    check_exist = True, # If True, check if the tarball exists
-    ):
-
-    # tarball
-    if not os.path.isabs(tarball_dir):
-        tarball_dir = os.path.join(sample_dir, tarball_dir)
-
-    data_tar = os.path.join(tarball_dir, 'nominal.tar')
-
-    if check_exist:
-        assert os.path.isfile(data_tar), f"Data sample tarball does not exist: {data_tar}"
-
-    return data_tar
-
 def get_samples_signal(
     sample_dir, # top direcotry to look for sample files
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
@@ -82,30 +65,6 @@ def get_samples_signal(
             assert os.path.isfile(f), "Not all signal sample files exist"
 
     return samples_sig
-
-def get_samples_signal_tarball(
-    sample_dir, # top direcotry for sample files
-    tarball_dir = 'tarballs', # top directory to look for sample tarball files
-    sample_suffix = '',
-    syst_type = 'nominal',
-    check_exist = True, # If True, check if the tarball exists
-    ):
-
-    # tarball
-    if not os.path.isabs(tarball_dir):
-        tarball_dir = os.path.join(sample_dir, tarball_dir)
-
-    if sample_suffix:
-        ttbar_name = f"ttbar_{sample_suffix}"
-        assert syst_type=='nominal', f"No {syst_type} avaialble for alternative ttbar sample {ttbar_name}"
-        signal_tar = os.path.join(tarball_dir, f"{ttbar_name}.tar")
-    else:
-        signal_tar = os.path.join(tarball_dir, f"{syst_type}.tar")
-
-    if check_exist:
-        assert os.path.isfile(signal_tar), f"Signal sample tarball does not exist: {signal_tar}"
-
-    return signal_tar
 
 def get_samples_backgrounds(
     sample_dir, # top direcotry to look for sample files
@@ -142,32 +101,13 @@ def get_samples_backgrounds(
 
     return samples_bkg
 
-def get_samples_backgrounds_tarball(
-    sample_dir, # top direcotry for sample files
-    tarball_dir = 'tarballs', # top directory to look for sample tarball files
-    syst_type = 'nominal',
-    check_exist = True, # If True, check if the files exist
-    ):
-
-    # tarball
-    if not os.path.isabs(tarball_dir):
-        tarball_dir = os.path.join(sample_dir, tarball_dir)
-
-    backgrounds_tar = os.path.join(tarball_dir, f"{syst_type}.tar")
-    # (alternative background samples are included in the same tarball as the nominal samples for now)
-
-    if check_exist:
-        assert os.path.isfile(backgrounds_tar), f"Background sample tarball does not exist: {backgrounds_tar}"
-
-    return backgrounds_tar
-
 def write_config_nominal(
     sample_local_dir,
     subcampaigns = ["mc16a", "mc16d", "mc16e"],
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
     print("nominal")
 
@@ -175,11 +115,6 @@ def write_config_nominal(
     data_nominal = get_samples_data(sample_local_dir, subcampaigns)
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        data_nominal_tar = get_samples_data_tarball(sample_local_dir)
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nominal_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # output directory
     outdir_nominal = os.path.join(output_top_dir, "nominal")
@@ -199,12 +134,8 @@ def write_config_nominal(
     print(f"Create run config: {outname_config_nominal}")
     util.write_dict_to_json(nominal_cfg, outname_config_nominal)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_nominal,
-            sample_local_dir,
-            sample_tarballs = [data_nominal_tar, sig_nominal_tar, bkg_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_nominal, sample_local_dir, site=site)
 
 def write_config_bootstrap(
     sample_local_dir,
@@ -214,7 +145,7 @@ def write_config_bootstrap(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
     print("bootstrap data")
 
@@ -222,11 +153,6 @@ def write_config_bootstrap(
     data_nominal = get_samples_data(sample_local_dir, subcampaigns)
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        data_nominal_tar = get_samples_data_tarball(sample_local_dir)
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nominal_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # output directory
     outdir_bs = os.path.join(output_top_dir, "bootstrap")
@@ -250,12 +176,8 @@ def write_config_bootstrap(
     print(f"Create run config: {outname_config_bootstrap}")
     util.write_dict_to_json(bootstrap_cfg, outname_config_bootstrap)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_bootstrap,
-            sample_local_dir,
-            sample_tarballs = [data_nominal_tar, sig_nominal_tar, bkg_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_bootstrap, sample_local_dir, site=site)
 
 def write_config_bootstrap_mc(
     sample_local_dir,
@@ -265,7 +187,7 @@ def write_config_bootstrap_mc(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
     print("bootstrap mc")
 
@@ -273,11 +195,6 @@ def write_config_bootstrap_mc(
     data_nominal = get_samples_data(sample_local_dir, subcampaigns)
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        data_nominal_tar = get_samples_data_tarball(sample_local_dir)
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nominal_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # output directory
     outdir_bs = os.path.join(output_top_dir, "bootstrap_mc")
@@ -302,12 +219,8 @@ def write_config_bootstrap_mc(
     print(f"Create run config: {outname_config_bootstrap_mc}")
     util.write_dict_to_json(bootstrap_mc_cfg, outname_config_bootstrap_mc)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_bootstrap_mc,
-            sample_local_dir,
-            sample_tarballs = [data_nominal_tar, sig_nominal_tar, bkg_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_bootstrap_mc, sample_local_dir, site=site)
 
 def write_config_bootstrap_mc_clos(
     sample_local_dir,
@@ -317,17 +230,13 @@ def write_config_bootstrap_mc_clos(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
     print("bootstrap mc closure")
 
     # nominal samples:
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nominal_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # output directory
     outdir_bs = os.path.join(output_top_dir, "bootstrap_mc_clos")
@@ -355,12 +264,8 @@ def write_config_bootstrap_mc_clos(
     print(f"Create run config: {outname_config_bootstrap_mc}")
     util.write_dict_to_json(bootstrap_mc_cfg, outname_config_bootstrap_mc)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_bootstrap_mc,
-            sample_local_dir,
-            sample_tarballs = [sig_nominal_tar, bkg_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_bootstrap_mc, sample_local_dir, site=site)
 
 def write_config_closure_resample(
     sample_local_dir,
@@ -368,17 +273,13 @@ def write_config_closure_resample(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
     print("closure resample")
 
     # nominal samples:
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nominal_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # output directory
     outdir_clos = os.path.join(output_top_dir, "closure_resample")
@@ -405,12 +306,8 @@ def write_config_closure_resample(
     print(f"Create run config: {outname_config_mc_clos}")
     util.write_dict_to_json(mc_clos_cfg, outname_config_mc_clos)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_mc_clos,
-            sample_local_dir,
-            sample_tarballs = [sig_nominal_tar, bkg_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_mc_clos, sample_local_dir, site=site)
 
 def write_config_closure_oddeven(
     sample_local_dir,
@@ -418,17 +315,13 @@ def write_config_closure_oddeven(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
     print("closure oddeven")
 
     # nominal samples:
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nominal = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nominal_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # output directory
     outdir_clos = os.path.join(output_top_dir, "closure_oddeven")
@@ -454,12 +347,8 @@ def write_config_closure_oddeven(
     print(f"Create run config: {outname_config_clos}")
     util.write_dict_to_json(mc_clos_cfg, outname_config_clos)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_clos,
-            sample_local_dir,
-            sample_tarballs = [sig_nominal_tar, bkg_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_clos, sample_local_dir, site=site)
 
 def write_config_theory(
     sample_local_dir,
@@ -469,7 +358,7 @@ def write_config_theory(
     outname_config =  'runConfig',
     common_cfg = {},
     write_single_file = False,
-    batch_job = False
+    batch_job = []
     ):
 
     cfg_theo_list = []
@@ -486,7 +375,6 @@ def write_config_theory(
         windex = int(windex)
 
         samples_data, samples_signal = [], []
-        tarballs = []
 
         if 'PDF4LHC' in syst: # PDF uncertainty
             weight_data = "mc_generator_weights_PDF4LHC15_0"
@@ -499,10 +387,6 @@ def write_config_theory(
                     sample_local_dir,
                     subcampaigns = [era],
                     )
-
-                if batch_job:
-                    sig_era_tar = get_samples_signal_tarball(sample_local_dir)
-                    tarballs.append(sig_era_tar)
 
                 if sumWgts_d:
                     rescale_sumw_data = sumWgts_d[410470][era][0] / sumWgts_d[410470][era][get_gen_weight_index('PDF4LHC15_0')]
@@ -525,10 +409,6 @@ def write_config_theory(
                     sample_local_dir,
                     subcampaigns = [era],
                     )
-
-                if batch_job:
-                    sig_era_tar = get_samples_signal_tarball(sample_local_dir)
-                    tarballs.append(sig_era_tar)
 
                 if sumWgts_d:
                     rescale_sumw = sumWgts_d[410470][era][0] / sumWgts_d[410470][era][windex]
@@ -560,12 +440,8 @@ def write_config_theory(
             print(f"Create run config: {outname_config_syst}")
             util.write_dict_to_json(syst_cfg, outname_config_syst)
 
-            if batch_job:
-                generate_slurm_jobs(
-                    outname_config_syst,
-                    sample_local_dir,
-                    sample_tarballs = tarballs
-                )
+            for site in batch_job:
+                generate_slurm_jobs(outname_config_syst, sample_local_dir, site=site)
 
     return cfg_theo_list
 
@@ -577,7 +453,7 @@ def write_config_systematics_modelling(
     outname_config =  'runConfig',
     common_cfg = {},
     write_single_file = False,
-    batch_job = False
+    batch_job = []
     ):
 
     cfg_model_list = []
@@ -589,12 +465,6 @@ def write_config_systematics_modelling(
         sample_suffix = 'AFII',
         )
 
-    if batch_job:
-        signal_nom_tar = get_samples_signal_tarball(
-            sample_local_dir,
-            sample_suffix = 'AFII'
-        )
-
     for syst in get_systematics(systematics_keywords, syst_type='Modelling'):
         print(syst)
 
@@ -603,12 +473,6 @@ def write_config_systematics_modelling(
             sample_local_dir, 
             subcampaigns,
             sample_suffix = f"{syst.split('_')[-1]}",
-            )
-
-        if batch_job:
-            signal_alt_tar = get_samples_signal_tarball(
-                sample_local_dir,
-                sample_suffix = f"{syst.split('_')[-1]}"
             )
 
         syst_cfg = common_cfg.copy()
@@ -627,12 +491,8 @@ def write_config_systematics_modelling(
             print(f"Create run config: {outname_config_syst}")
             util.write_dict_to_json(syst_cfg, outname_config_syst)
 
-            if batch_job:
-                generate_slurm_jobs(
-                    outname_config_syst,
-                    sample_local_dir,
-                    sample_tarballs = [signal_nom_tar, signal_alt_tar]
-                )
+            for site in batch_job:
+                generate_slurm_jobs(outname_config_syst, sample_local_dir, site=site)
 
     return cfg_model_list
 
@@ -644,7 +504,7 @@ def write_config_systematics_background(
     outname_config =  'runConfig',
     common_cfg = {},
     write_single_file = False,
-    batch_job = False
+    batch_job = []
     ):
 
     cfg_bkg_list = []
@@ -655,10 +515,6 @@ def write_config_systematics_background(
         sample_local_dir, subcampaigns,
         backgrounds = all_backgrounds
         )
-
-    if batch_job:
-        sig_nom_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nom_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     # background modelling
     for syst in get_systematics(systematics_keywords, syst_type="BackgroundModelling"):
@@ -676,8 +532,6 @@ def write_config_systematics_background(
                 backgrounds = all_backgrounds_alt
                 )
 
-            if batch_job:
-                bkg_alt_tar = get_samples_backgrounds_tarball(sample_local_dir)
         else:
             raise RuntimeError(f"Something went wrong. Unknown background modelling systematic {syst}.")
 
@@ -698,12 +552,8 @@ def write_config_systematics_background(
             print(f"Create run config: {outname_config_syst}")
             util.write_dict_to_json(syst_cfg, outname_config_syst)
 
-            if batch_job:
-                generate_slurm_jobs(
-                    outname_config_syst,
-                    sample_local_dir,
-                    sample_tarballs = [sig_nom_tar, bkg_nom_tar, bkg_alt_tar]
-                )
+            for site in batch_job:
+                generate_slurm_jobs(outname_config_syst, sample_local_dir, site=site)
 
     # background normalization
     for syst in get_systematics(systematics_keywords, syst_type="BackgroundNorm"):
@@ -730,13 +580,6 @@ def write_config_systematics_background(
             backgrounds = bkg_names_others
         )
 
-        #if batch_job:
-        #    bkg_rescale_tar = get_samples_backgrounds_tarball(sample_local_dir)
-        #    # bkg_rescale_tar should be the same as bkg_nom_tar
-        #
-        #    bkg_others_tar = get_samples_backgrounds_tarball(sample_local_dir)
-        #    # bkg_others_tar should be the same as bkg_nom_tar
-
         bkg_alt = [f"{sample}*{f_rescale}" for sample in bkg_rescale]
 
         # add the rest of the background samples
@@ -759,12 +602,8 @@ def write_config_systematics_background(
             print(f"Create run config: {outname_config_syst}")
             util.write_dict_to_json(syst_cfg, outname_config_syst)
 
-            if batch_job:
-                generate_slurm_jobs(
-                    outname_config_syst,
-                    sample_local_dir,
-                    sample_tarballs = [sig_nom_tar, bkg_nom_tar]
-                )
+            for site in batch_job:
+                generate_slurm_jobs(outname_config_syst, sample_local_dir, site=site)
 
     return cfg_bkg_list
 
@@ -776,7 +615,7 @@ def write_config_systematics(
     outname_config =  'runConfig',
     common_cfg = {},
     write_single_file = False,
-    batch_job = False
+    batch_job = []
     ):
 
     cfg_dict_list = []
@@ -784,10 +623,6 @@ def write_config_systematics(
     # nominal samples:
     sig_nom = get_samples_signal(sample_local_dir, subcampaigns)
     bkg_nom = get_samples_backgrounds(sample_local_dir, subcampaigns)
-
-    if batch_job:
-        sig_nom_tar = get_samples_signal_tarball(sample_local_dir)
-        bkg_nom_tar = get_samples_backgrounds_tarball(sample_local_dir)
 
     print("central")
     central_cfg = common_cfg.copy()
@@ -808,12 +643,8 @@ def write_config_systematics(
         print(f"Create run config: {outname_config_central}")
         util.write_dict_to_json(central_cfg, outname_config_central)
 
-        if batch_job:
-            generate_slurm_jobs(
-                outname_config_central,
-                sample_local_dir,
-                sample_tarballs = [sig_nom_tar, bkg_nom_tar]
-            )
+        for site in batch_job:
+            generate_slurm_jobs(outname_config_central, sample_local_dir, site=site)
 
     # systematics as alternative sets of events in TTrees
     for syst in get_systematics(systematics_keywords, syst_type="Branch"):
@@ -832,18 +663,6 @@ def write_config_systematics(
             sample_local_dir,
             subcampaigns,
             syst_type = syst
-            )
-
-        if batch_job:
-            sig_syst_tar = get_samples_signal_tarball(
-                sample_local_dir,
-                syst_type = syst
-            )
-
-            # background samples to be mixed with the above signal samples to make pseudo data
-            bkg_syst_tar = get_samples_backgrounds_tarball(
-                sample_local_dir,
-                syst_type = syst
             )
 
         # unfold using the nominal samples
@@ -867,12 +686,8 @@ def write_config_systematics(
             print(f"Create run config: {outname_config_syst}")
             util.write_dict_to_json(syst_cfg, outname_config_syst)
 
-            if batch_job:
-                generate_slurm_jobs(
-                    outname_config_syst,
-                    sample_local_dir,
-                    sample_tarballs = [sig_nom_tar, bkg_nom_tar, sig_syst_tar, bkg_syst_tar]
-                )
+            for site in batch_job:
+                generate_slurm_jobs(outname_config_syst, sample_local_dir, site=site)
 
     # systematics as scale factor variations
     for syst, wtype in zip(*get_systematics(systematics_keywords, syst_type="ScaleFactor", get_weight_types=True)):
@@ -902,12 +717,8 @@ def write_config_systematics(
             print(f"Create run config: {outname_config_syst}")
             util.write_dict_to_json(syst_cfg, outname_config_syst)
 
-            if batch_job:
-                generate_slurm_jobs(
-                    outname_config_syst,
-                    sample_local_dir,
-                    sample_tarballs = [sig_nom_tar, bkg_nom_tar]
-                )
+            for site in batch_job:
+                generate_slurm_jobs(outname_config_syst, sample_local_dir, site=site)
 
     # Theory uncertainties
     # ISR,FSR, and PDF
@@ -964,7 +775,7 @@ def write_config_model(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
 
     print(f"Model tests: {ttbar_alt}")
@@ -982,17 +793,6 @@ def write_config_model(
         subcampaigns,
         sample_suffix = ttbar_alt,
     )
-
-    if batch_job:
-        signal_nominal_tar = get_samples_signal_tarball(
-            sample_local_dir,
-            sample_suffix = 'AFII',
-        )
-
-        signal_alt_tar = get_samples_signal_tarball(
-            sample_local_dir,
-            sample_suffix = ttbar_alt,
-        )
 
     outdir_alt = os.path.join(output_top_dir, f"ttbar_{ttbar_alt}_vs_nominal")
 
@@ -1013,12 +813,8 @@ def write_config_model(
     print(f"Create run config: {outname_config_alt}")
     util.write_dict_to_json(ttbar_alt_cfg, outname_config_alt)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_config_alt,
-            sample_local_dir,
-            sample_tarballs = [signal_nominal_tar, signal_alt_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_config_alt, sample_local_dir, site=site)
 
 def write_config_stress(
     sample_local_dir,
@@ -1027,14 +823,12 @@ def write_config_stress(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
 
     print("Stress tests")
 
     sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
-    if batch_job:
-        sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
 
     stress_common_cfg = common_cfg.copy()
     stress_common_cfg.update({
@@ -1059,12 +853,8 @@ def write_config_stress(
     print(f"Create run config: {outname_stress_th_pt}")
     util.write_dict_to_json(stress_th_pt_cfg, outname_stress_th_pt)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_stress_th_pt,
-            sample_local_dir,
-            sample_tarballs = [sig_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_stress_th_pt, sample_local_dir, site=site)
 
     ######
     # mtt bump
@@ -1079,12 +869,8 @@ def write_config_stress(
     print(f"Create run config: {outname_stress_bump}")
     util.write_dict_to_json(stress_bump_cfg, outname_stress_bump)
 
-    if batch_job:
-        generate_slurm_jobs(
-            outname_stress_bump,
-            sample_local_dir,
-            sample_tarballs = [sig_nominal_tar]
-        )
+    for site in batch_job:
+        generate_slurm_jobs(outname_stress_bump, sample_local_dir, site=site)
 
     # data
     if not fpath_reweights:
@@ -1103,17 +889,11 @@ def write_config_stress(
         print(f"Create run config: {outname_stress_data}")
         util.write_dict_to_json(stress_data_cfg, outname_stress_data)
 
-        if batch_job:
-            generate_slurm_jobs(
-                outname_stress_data,
-                sample_local_dir,
-                sample_tarballs = [sig_nominal_tar]
-            )
+        for site in batch_job:
+            generate_slurm_jobs(outname_stress_data, sample_local_dir, site=site)
 
         # use the reweighted signal MC to unfold data
         data_nominal = get_samples_data(sample_local_dir, subcampaigns)
-        if batch_job:
-            data_nominal_tar = get_samples_data_tarball(sample_local_dir)
 
         stress_data_alt_cfg = stress_common_cfg.copy()
         stress_data_alt_cfg.update({
@@ -1133,12 +913,8 @@ def write_config_stress(
         print(f"Create run config: {outname_stress_data_alt}")
         util.write_dict_to_json(stress_data_alt_cfg, outname_stress_data_alt)
 
-        if batch_job:
-            generate_slurm_jobs(
-                outname_stress_data_alt,
-                sample_local_dir,
-                sample_tarballs = [sig_nominal_tar, data_nominal_tar]
-            )
+        for site in batch_job:
+            generate_slurm_jobs(outname_stress_data_alt, sample_local_dir, site=site)
 
 def write_config_stress_binned(
     sample_local_dir,
@@ -1147,7 +923,7 @@ def write_config_stress_binned(
     output_top_dir = '.',
     outname_config =  'runConfig',
     common_cfg = {},
-    batch_job = False
+    batch_job = []
     ):
 
     print("Stress tests: binned reweighting")
@@ -1155,8 +931,6 @@ def write_config_stress_binned(
         print("ERROR cannot generate run config for data induced stress test: no external weight files are provided.")
     else:
         sig_nominal = get_samples_signal(sample_local_dir, subcampaigns)
-        if batch_job:
-            sig_nominal_tar = get_samples_signal_tarball(sample_local_dir)
 
         observables = common_cfg["observables"]
 
@@ -1191,12 +965,8 @@ def write_config_stress_binned(
         print(f"Create run config: {outname_stress_data_binned}")
         util.write_dict_to_json(cfg_list, outname_stress_data_binned)
 
-        if batch_job:
-            generate_slurm_jobs(
-                outname_stress_data_binned,
-                sample_local_dir,
-                sample_tarballs = [sig_nominal_tar]
-            )
+        for site in batch_job:
+            generate_slurm_jobs(outname_stress_data_binned, sample_local_dir, site=site)
 
 def createRun2Config(
         sample_local_dir,
@@ -1207,7 +977,7 @@ def createRun2Config(
         systematics_keywords = [],
         external_reweights = [],
         common_cfg = {},
-        batch_job = False
+        batch_job = []
     ):
 
     # get the real paths of the sample directory and output directory
@@ -1321,8 +1091,9 @@ if __name__ == "__main__":
     parser.add_argument("--config-string", type=str,
                         help="String in JSON format to be parsed for updating run configs")
 
-    parser.add_argument("-b", "--batch-job", action='store_true',
-                        help="If True, generate both run configs and batch job files")
+    parser.add_argument("-b", "--batch-job", choices=['cedar', 'ubc'], nargs='+',
+                        default=[],
+                        help="If provided, generate both run configs and batch job files for the specified sites")
 
     args = parser.parse_args()
 
