@@ -1091,7 +1091,7 @@ if __name__ == "__main__":
     parser.add_argument("--config-string", type=str,
                         help="String in JSON format to be parsed for updating run configs")
 
-    parser.add_argument("-b", "--batch-job", choices=['cedar', 'ubc'], nargs='+',
+    parser.add_argument("-b", "--batch-job", choices=['cc', 'ubc'], nargs='+',
                         default=[],
                         help="If provided, generate both run configs and batch job files for the specified sites")
 

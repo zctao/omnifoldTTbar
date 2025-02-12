@@ -93,7 +93,7 @@ def generate_slurm_jobs(
     output_name = None, # slurm job file name,
     output_dir = None, # output directory
     check_tarfiles = True, # if True, check if all input files are available in tarballs
-    site = "cedar" # site name; cedar or ubc
+    site = "cc" # site name; cc or ubc
     ):
 
     if output_dir is None:
@@ -172,8 +172,8 @@ def generate_slurm_jobs(
     }
 
     # Load slurm job template
-    if site == "cedar":
-        slurm_template = os.path.expandvars("${SOURCE_DIR}/slurm/cedarJob.template")
+    if site == "cc":
+        slurm_template = os.path.expandvars("${SOURCE_DIR}/slurm/ccJob.template")
         format_dict = job_common_dict.copy()
         format_dict.update({
             "ACCOUNT" : account,
@@ -200,10 +200,10 @@ if __name__ == '__main__':
                         default="${DATA_DIR}/ntuplerTT/latest",
                         help='Top direcotry for sample files')
     parser.add_argument('-e', '--email', type=str, action=util.ParseEnvVar, default="${USER}@phas.ubc.ca", help="Email address for job notifications")
-    parser.add_argument('-a', '--account', type=str, default="def-alister", help="Slurm account for Cedar")
+    parser.add_argument('-a', '--account', type=str, default="def-alister", help="Slurm account for computecanada")
     parser.add_argument('-o', '--output-name', type=str, help="Slurm job file name")
     parser.add_argument('--output-dir', type=str, help="Output directory")
-    parser.add_argument('-s', '--site', choices=['cedar', 'ubc'], help="Site to run jobs")
+    parser.add_argument('-s', '--site', choices=['cc', 'ubc'], help="Site to run jobs")
 
     args = parser.parse_args()
 
