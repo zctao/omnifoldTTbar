@@ -83,7 +83,6 @@ echo "Collect output files in {OUTPUTDIR} and copy them to $RESULTDIR"
 #tar -cf {RESULT} *
 # or just copy
 rsync -azP * $RESULTDIR/.
-
 cd $WORKDIR
 
 echo "Cleaning up..."

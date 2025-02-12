@@ -14,18 +14,14 @@ module load python/3.11 scipy-stack cuda cudnn
 source "${{HOME}}/venv_tf/bin/activate"
 
 echo "HOSTNAME=$HOSTNAME"
-nvidia-smi
+CWD=$PWD
 
 # Make a work directory on the node local disk
 WORKDIR=${{SLURM_TMPDIR}}/$USER/${{SLURM_JOB_ID}}
+
+echo WORKDIR=$WORKDIR
 mkdir -p $WORKDIR
 cd $WORKDIR
-echo WORKDIR=$WORKDIR
-
-# Get the code
-echo 'Getting source code from github'
-git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
-source omnifoldTop/setup.sh
 
 # Prepare data
 echo 'Preparing input datasets'
@@ -39,22 +35,27 @@ for i in "${{!tarlist[@]}}"; do
     tar -C {INPUTDIR}/ -xf "${{tarlist[i]}}" -T "${{filelist[i]}}"
 done
 
+# Prepare output directory
+echo 'Creating local output directory: {OUTPUTDIR}'
+mkdir {OUTPUTDIR}
+
 # Prepare config
 echo 'Copying run config'
 mkdir configs
 echo "Copying {RUNCONFIG} to configs/run_config.json"
 cp {RUNCONFIG} configs/run_config.json
 
-# Prepare output directory
-echo 'Creating local output directory: {OUTPUTDIR}'
-mkdir {OUTPUTDIR}
+# Get the code
+echo 'Getting source code from github'
+git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
+source omnifoldTop/setup.sh
 
 # Run unfolding
 echo 'Start running unfolding...'
+nvidia-smi
 python omnifoldTop/run_unfold.py configs/run_config.json
 echo 'Unfolding done!'
 
-echo "Collect output files in {OUTPUTDIR} and copy them to {RESULT}"
 cd {OUTPUTDIR}
 
 # check if the result directory exists
@@ -64,13 +65,15 @@ if [ ! -d "$RESULTDIR" ]; then
     mkdir -p $RESULTDIR
 fi
 
+echo "Collect output files in {OUTPUTDIR} and copy them to {RESULT}"
+
 tar -cf {RESULT} *
 cd $WORKDIR
 
 echo "Cleaning up..."
-cd ${{SLURM_TMPDIR}}
 rm -rf $WORKDIR
 
+cd $CWD
 echo "All done!"
 deactivate
 
