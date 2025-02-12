@@ -290,7 +290,7 @@ if __name__ == "__main__":
         "--config-string", type=str,
         help="String in JSON format to be parsed for updating run configs")
     parser_gen.add_argument(
-        "-b", "--batch-job", choices=['cedar', 'ubc'], nargs='+', default=[],
+        "-b", "--batch-job", choices=['cc', 'ubc'], nargs='+', default=[],
         help="If provided, generate both run configs and batch job files for the specified sites")
 
     parser_gen.set_defaults(func=generate)
