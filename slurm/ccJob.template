@@ -46,14 +46,15 @@ echo "Copying {RUNCONFIG} to configs/run_config.json"
 cp {RUNCONFIG} configs/run_config.json
 
 # Get the code
-echo 'Getting source code from github'
-git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
+REPOPATH=${{HOME}}/topUnfolding/omnifoldTop
+echo "Getting source code from ${{REPOPATH}}"
+git clone --single-branch --branch devel ${{REPOPATH}}
 source omnifoldTop/setup.sh
 
 # Run unfolding
 echo 'Start running unfolding...'
 nvidia-smi
-python omnifoldTop/run_unfold.py configs/run_config.json
+python ${{SOURCE_DIR}}/run_unfold.py configs/run_config.json
 echo 'Unfolding done!'
 
 cd {OUTPUTDIR}

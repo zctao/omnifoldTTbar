@@ -46,13 +46,11 @@ mkdir configs
 echo "Copying {RUNCONFIG} to configs/run_config.json"
 cp {RUNCONFIG} configs/run_config.json
 
-# Get the code from github
-#echo 'Getting source code from github'
-#git clone --single-branch --branch devel git@github.com:zctao/omnifoldTop.git
-#REPOPATH=$WORKDIR/omnifoldTop
-# or use the local one
-REPOPATH=$HOME/topUnfolding/omnifoldTop
-source $REPOPATH/setup.sh
+# Get the code
+REPOPATH=${{HOME}}/topUnfolding/omnifoldTop
+echo "Getting source code from ${{REPOPATH}}"
+git clone --single-branch --branch devel ${{REPOPATH}}
+source omnifoldTop/setup.sh
 
 # Run unfolding
 UNFOLDCMD=$(cat <<EOF
