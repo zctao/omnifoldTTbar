@@ -149,7 +149,8 @@ def omnifold(
     #else:
         # write directly to output_dataset[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :]
 
-    reportGPUMemUsage(logger)
+    if logger.isEnabledFor(logging.DEBUG):
+        reportGPUMemUsage(logger)
 
     for i in range(niterations):
         logger.info(f"Iteration {i}")
@@ -178,7 +179,9 @@ def omnifold(
         )
 
         gc.collect()
-        reportGPUMemUsage(logger)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            reportGPUMemUsage(logger)
 
         #####
         # step 1b: deal with events that do not pass reco cuts
@@ -214,7 +217,8 @@ def omnifold(
         if output_dataset_reco is not None:
             output_dataset_reco[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :] = weights_pull[:, passcut_sim]
 
-        reportGPUMemUsage(logger)
+        if logger.isEnabledFor(logging.DEBUG):
+            reportGPUMemUsage(logger)
         gc.collect()
 
         #####
@@ -242,7 +246,9 @@ def omnifold(
         )
 
         gc.collect()
-        reportGPUMemUsage(logger)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            reportGPUMemUsage(logger)
 
         #####
         # step 2b: events that do not pass truth cuts
@@ -281,7 +287,9 @@ def omnifold(
         else:
             output_dataset[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :] = weights_push[:, passcut_gen]
 
-        #reportGPUMemUsage(logger)
+        if logger.isEnabledFor(logging.DEBUG):
+            reportGPUMemUsage(logger)
+
         gc.collect()
 
     # end of iteration loop
