@@ -11,6 +11,7 @@ from lrscheduler import get_lr_scheduler
 from layer_namer import _layer_name
 from callbacks import EarlyLocking
 from packaging import version
+import numpy as np
 
 n_models_in_parallel = 1
 
@@ -242,7 +243,7 @@ def _train_model(model, X, Y, w, callbacks=[], figname='', batch_size=32768, epo
     #     preds_val = model.predict(X_val_list, batch_size=batch_size)[:,1]
     #     plotter.plot_training_vs_validation(figname, preds_train, Y_train, w_train, preds_val, Y_val, w_val)
 
-def train_model(model, X, Y, w, callbacks=[], figname='', batch_size=32768, epochs=100, verbose=1):
+def _train_model(model, X, Y, w, callbacks=[], batch_size=32768, epochs=100, verbose=1):
     # initalize empty dictionaries
     train_dictionary, val_dictionary = {}, {}
     train_y_dictionary, val_y_dictionary = {}, {}
@@ -271,6 +272,60 @@ def train_model(model, X, Y, w, callbacks=[], figname='', batch_size=32768, epoc
 
     fitargs = {'callbacks': callbacks, 'epochs': epochs, 'verbose': verbose, 'batch_size': batch_size}
     model.fit(train_dictionary, train_y_dictionary, sample_weight=train_w, validation_data=(val_dictionary, val_y_dictionary, val_w), **fitargs)
+
+def prepare_training_datasets(x0, w0, x1, w1, xb=None, wb=None):
+    if np.asarray(w0).ndim == 1:
+        w0 = [w0]*n_models_in_parallel
+    if np.asarray(w1).ndim == 1:
+        w1 = [w1]*n_models_in_parallel
+    if np.asarray(wb).ndim == 1:
+        wb = [wb]*n_models_in_parallel
+
+    random_state = rng.integers(0, 2**16)
+
+    if xb is None:
+        xtrain, xval, ytrain, yval = train_test_split(
+            np.concatenate([x0, x1]),
+            np.concatenate([np.zeros(len(x0)), np.ones(len(x1))]),
+            random_state=random_state
+        )
+        w_c = np.concatenate([w0, w1],axis=1)
+    else:
+        xtrain, xval, ytrain, yval = train_test_split(
+            np.concatenate([x0, x1, xb]),
+            np.concatenate([np.zeros(len(x0)), np.ones(len(x1)+len(xb))]),
+            random_state=random_state
+        )
+        w_c = np.concatenate([w0, w1, -1*np.asarray(wb)],axis=1)
+
+    train_d = {'X':{}, 'Y':{}, 'w':{}}
+    val_d = {'X':{}, 'Y':{}, 'w':{}}
+
+    with tf.device("CPU"):
+        xtrain = tf.convert_to_tensor(xtrain)
+        xval = tf.convert_to_tensor(xval)
+        ytrain = tf.convert_to_tensor(ytrain)
+        yval = tf.convert_to_tensor(yval)
+
+        for i in range(n_models_in_parallel):
+            wtrain, wval = train_test_split(w_c[i], random_state=random_state)
+
+            train_d['X'][_layer_name(i, "input")] = xtrain
+            val_d['X'][_layer_name(i, "input")] = xval
+            train_d['Y'][_layer_name(i, "output")] = ytrain
+            val_d['Y'][_layer_name(i, "output")] = yval
+
+            train_d['w'][_layer_name(i, "output")] = tf.convert_to_tensor(wtrain)
+            val_d['w'][_layer_name(i, "output")] = tf.convert_to_tensor(wval)
+
+    return train_d, val_d
+
+def train_model(model, X0, w0, X1, w1, Xb=None, wb=None, save_filepath='', batch_size=32768, epochs=100, verbose=1):
+    train_dict, val_dict = prepare_training_datasets(X0, w0, X1, w1, Xb, wb)
+
+    fitargs = {'callbacks': get_callbacks(save_filepath), 'epochs': epochs, 'verbose': verbose, 'batch_size': batch_size}
+
+    model.fit(train_dict['X'], train_dict['Y'], sample_weight=train_dict['w'], validation_data=(val_dict['X'], val_dict['Y'], val_dict['w']), **fitargs)
 
 def dense_net(input_shape, nnodes=[100, 100, 100], nclass=2):
     """

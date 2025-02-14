@@ -4,26 +4,13 @@ from sklearn.utils import shuffle
 import hist
 
 import modelUtils
-from modelUtils import get_model, get_callbacks, train_model
+from modelUtils import get_model, train_model
 import histUtils as myhu
 import plotter
 
 import logging
 
 logger = logging.getLogger("nnreweighter")
-
-def check_weights(w, nevents=None):
-    if w is None:
-        if nevents is None:
-            raise RuntimeError(f"Number of events is not specified")
-        else:
-            w = np.ones(shape=(modelUtils.n_models_in_parallel, nevents))
-    elif np.asarray(w).ndim == 1:
-        w = [w] * modelUtils.n_models_in_parallel
-    elif len(w) != modelUtils.n_models_in_parallel:
-        raise RuntimeError(f"The number of weight arrays provided in the list ({len(w)}) is inconsistent with the number of parallel models ({modelUtils.n_models_in_parallel})")
-
-    return np.asarray(w)
 
 def predict(model, events, batch_size):
     events_list = [events for _ in range(modelUtils.n_models_in_parallel)]
@@ -78,21 +65,15 @@ def _train_impl(
     else:
         logger.info("Start training")
 
-        if X_b is None:
-            X_train = np.concatenate([X_0, X_1])
-            Y_train = np.concatenate([np.zeros(len(X_0)), np.ones(len(X_1))])
-            w_train = np.concatenate([w_0, w_1], axis=1)
-        else:
-            X_train = np.concatenate([X_0, X_1, X_b])
-            Y_train = np.concatenate([np.zeros(len(X_0)), np.ones(len(X_1)+len(X_b))])
-            w_train = np.concatenate([w_0, w_1, -1*w_b], axis=1)
-
         train_model(
             classifier,
-            X_train, Y_train, w_train,
-            batch_size = batch_size, epochs = epochs,
-            callbacks = get_callbacks(model_filepath_save),
-            )
+            X_0, w_0,
+            X_1, w_1,
+            X_b, w_b,
+            save_filepath=model_filepath_save,
+            batch_size = batch_size,
+            epochs = epochs,
+        )
 
         logger.info("Training done")
 
@@ -181,14 +162,19 @@ def train_and_reweight(
         logger.setLevel(logging.INFO)
 
     # event weights
-    w_target = check_weights(w_target, nevents = len(X_target))
-    w_source = check_weights(w_source, nevents = len(X_source))
+    if w_target is None:
+        w_target = np.ones(len(X_target))
+
+    if w_source is None:
+        w_source = np.ones(len(X_source))
 
     # background to be subtracted from target
     if X_bkg is not None:
-        # shuffle background first
+        if w_bkg is None:
+            w_bkg = np.ones(len(X_bkg))
+
+        # shuffle background
         X_bkg, w_bkg = shuffle(X_bkg, w_bkg)
-        w_bkg = check_weights(w_bkg, nevents = len(X_bkg))
 
     # plot input variable ratios
     if plot and ax_input_ratio is not None:
@@ -267,11 +253,11 @@ def train_and_reweight(
 
             classifier = _train_impl(
                 X_target[indices_train_target],
-                w_target[:, indices_train_target],
+                w_target[...,indices_train_target],
                 X_source[indices_train_source],
-                w_source[:, indices_train_source],
+                w_source[...,indices_train_source],
                 X_bkg[indices_train_bkg] if indices_train_bkg is not None else None,
-                w_bkg[:, indices_train_bkg] if indices_train_bkg is not None else None,
+                w_bkg[...,indices_train_bkg] if indices_train_bkg is not None else None,
                 model_type = model_type,
                 skip_training = skip_training,
                 model_filepath_load = model_filepath_load_icv,
@@ -284,11 +270,11 @@ def train_and_reweight(
             preds_out[:, indices_test_source] = _reweight_impl(
                 classifier,
                 X_source[indices_test_source],
-                w_source[:,indices_test_source],
+                w_source[...,indices_test_source],
                 X_target[indices_test_target],
-                w_target[:,indices_test_target],
+                w_target[...,indices_test_target],
                 X_bkg[indices_test_bkg] if indices_test_bkg is not None else None,
-                w_bkg[:, indices_test_bkg] if indices_test_bkg is not None else None,
+                w_bkg[...,indices_test_bkg] if indices_test_bkg is not None else None,
                 X_pred = X_pred,
                 batch_size = batch_size,
                 calibrate = calibrate,
