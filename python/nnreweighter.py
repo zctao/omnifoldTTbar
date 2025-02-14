@@ -169,12 +169,8 @@ def train_and_reweight(
         w_source = np.ones(len(X_source))
 
     # background to be subtracted from target
-    if X_bkg is not None:
-        if w_bkg is None:
-            w_bkg = np.ones(len(X_bkg))
-
-        # shuffle background
-        X_bkg, w_bkg = shuffle(X_bkg, w_bkg)
+    if X_bkg is not None and w_bkg is None:
+        w_bkg = np.ones(len(X_bkg))
 
     # plot input variable ratios
     if plot and ax_input_ratio is not None:
@@ -228,7 +224,13 @@ def train_and_reweight(
 
         i_source_gen = kf.split(X_source)
         i_target_gen = kf.split(X_target)
-        i_bkg_gen = kf.split(X_bkg) if X_bkg is not None else None
+
+        if X_bkg is not None:
+            # shuffle background first
+            X_bkg, w_bkg = shuffle(X_bkg, w_bkg)
+            i_bkg_gen = kf.split(X_bkg)
+        else:
+            i_bkg_gen = None
 
         if i_bkg_gen is None:
             index_gen_zip = zip(i_source_gen, i_target_gen)
