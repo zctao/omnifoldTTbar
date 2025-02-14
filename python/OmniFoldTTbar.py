@@ -459,14 +459,14 @@ class OmniFoldTTbar():
 
         self.unfolded_weights = self.file_uw.create_dataset(
             "unfolded_weights", shape=uw_shape, chunks = (1,)+uw_shape_per_run,
-            dtype=np.float32)
+            dtype=np.float64)
 
         if save_reco_weights:
             reco_w_shape_per_run = (niterations, np.count_nonzero(passcut_sim))
             reco_w_shape = (nruns * modelUtils.n_models_in_parallel,) + reco_w_shape_per_run
             self.reco_weights = self.file_uw.create_dataset(
                 "reco_weights", shape=reco_w_shape, chunks = (1,)+reco_w_shape_per_run,
-                dtype=np.float32)
+                dtype=np.float64)
 
         for ir in range(nruns):
             logger.info(f"Run #{ir}")

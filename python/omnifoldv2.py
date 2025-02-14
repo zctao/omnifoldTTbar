@@ -140,11 +140,11 @@ def omnifold(
     ################
     # Start iterations
     # Weights
-    weights_push = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_sim)), dtype=np.float32)
-    weights_pull = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_gen)), dtype=np.float32)
+    weights_push = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_sim)), dtype=np.float64)
+    weights_pull = np.ones(shape=(modelUtils.n_models_in_parallel, len(X_gen)), dtype=np.float64)
 
     if output_dataset is None:
-        weights_unfold = np.empty(shape=(modelUtils.n_models_in_parallel, niterations, np.count_nonzero(passcut_gen)), dtype=np.float32)
+        weights_unfold = np.empty(shape=(modelUtils.n_models_in_parallel, niterations, np.count_nonzero(passcut_gen)), dtype=np.float64)
         # shape: (modelUtils.n_models_in_parallel, n_iterations, n_events[passcut_gen])
     #else:
         # write directly to output_dataset[run_index*modelUtils.n_models_in_parallel:(run_index+1)*modelUtils.n_models_in_parallel, i, :]

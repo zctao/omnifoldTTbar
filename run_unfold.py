@@ -2,9 +2,8 @@
 import os
 import sys
 import itertools
-from util import read_dict_from_json, reportMemUsage
+from util import read_dict_from_json
 from unfoldv2 import getArgsParser, unfold
-from modelUtils import reportGPUMemUsage
 
 import logging
 logger = logging.getLogger("run_unfold")
