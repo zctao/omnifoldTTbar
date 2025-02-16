@@ -101,8 +101,9 @@ def generate_slurm_jobs(
     if output_dir is None:
         # creat a 'slurm' directory in the same directory as the config file
         output_dir = os.path.join(os.path.dirname(os.path.abspath(config_name)), f'slurm_{site}')
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
 
     if not output_name:
         # set it to the same as config_name but with a different extension
