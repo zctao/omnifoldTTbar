@@ -101,8 +101,8 @@ def generate(args):
         "iterations" : 3,
         "batch_size" : 500000,
         "normalize" : False,
-        "nruns" : 8,
-        "parallel_models" : 3,
+        "nruns" : 12,
+        "parallel_models" : 2,
         "run_ibu": False,
     }
 
