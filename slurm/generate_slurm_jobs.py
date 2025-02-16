@@ -8,7 +8,8 @@ from datahandler_base import filter_filepaths
 def get_all_samples_from_config(
     runCfg_d,
     sample_keys=['data', 'signal', 'background', 'bdata'],
-    realpath = False
+    realpath = False,
+    filterpath = True
     ):
     all_samples = []
     for key in sample_keys:
@@ -17,12 +18,13 @@ def get_all_samples_from_config(
             continue
 
         # clean up the sample names
-        samples_clean = filter_filepaths(samples)[0]
+        if filterpath:
+            samples = filter_filepaths(samples)[0]
 
         if realpath:
-            samples_clean = [os.path.realpath(os.path.expandvars(sample)) for sample in samples_clean]
+            samples = [os.path.realpath(os.path.expandvars(sample)) for sample in samples]
 
-        all_samples += samples_clean
+        all_samples += samples
 
     return all_samples
 
@@ -55,7 +57,7 @@ def get_sample_tarball_map(
 
     tarballs_dict = {}
 
-    sample_files_config = get_all_samples_from_config(runCfg_d, sample_keys, realpath=True)
+    sample_files_config = get_all_samples_from_config(runCfg_d, sample_keys, realpath=True, filterpath=True)
     for sample_file in sample_files_config:
         sample_relpath = os.path.relpath(sample_file, sample_dir)
         sample_type, syst_type = sample_relpath.split('/')[0:2]
@@ -131,7 +133,7 @@ def generate_slurm_jobs(
 
     # inputs
     for key in ['data', 'signal', 'background', 'bdata']:
-        samples = get_all_samples_from_config(runcfg, sample_keys=[key], realpath=True)
+        samples = get_all_samples_from_config(runcfg, sample_keys=[key], realpath=True, filterpath=False)
         if samples:
             # replace the absolute paths of samples with the paths on the node
             runcfg[key] = [os.path.join(inputdir_job, os.path.relpath(sample, sample_realdir)) for sample in samples]
