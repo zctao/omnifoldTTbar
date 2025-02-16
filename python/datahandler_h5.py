@@ -356,6 +356,17 @@ class DataHandlerH5(DataHandlerBase):
                     self.weights_mc *= self.vds[wname_syst]
                     np.divide(self.weights_mc, self.vds[wname_comp], out=self.weights_mc, where = self.vds[wname_comp][:]!=0)
 
+        # In case there are NaN values
+        nval_nan = np.sum(np.isnan(self.weights))
+        if nval_nan > 0:
+            logger.warning(f"Found {nval_nan} NaN values in event weights. Converting them to 0...")
+            np.nan_to_num(self.weights, copy=False)
+
+        nvalmc_nan = np.sum(np.isnan(self.weights_mc))
+        if nvalmc_nan > 0:
+            logger.warning(f"Found {nvalmc_nan} NaN values in event MC weights. Converting them to 0...")
+            np.nan_to_num(self.weights_mc, copy=False)
+
         # rescale weights
         if not hasattr(rescale_factors, '__len__'):
             rescale_factors = [rescale_factors]*len(filepaths)
