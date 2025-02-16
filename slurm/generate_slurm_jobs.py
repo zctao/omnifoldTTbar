@@ -159,6 +159,10 @@ def generate_slurm_jobs(
     # replace the output directory in the config with a local directory on the node
     runcfg['outputdir'] = outputdir_job
 
+    if site=="ubc":
+        # choose gpu
+        runcfg["gpu"] = 0 if output_name.endswith("_down") else 1
+
     # write the new config file
     util.write_dict_to_json(runcfg, jobcfg_name)
 
