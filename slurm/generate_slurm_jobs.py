@@ -73,12 +73,12 @@ def get_sample_tarball_map(
             raise ValueError(f"Unknown sample type {sample_type} with syst_type {syst_type}")
 
         if not tarball in tarballs_dict:
-            tarballs_dict[tarball] = []
-        tarballs_dict[tarball].append(sample_relpath)
+            tarballs_dict[tarball] = set()
+        tarballs_dict[tarball].add(sample_relpath)
 
         # A special case: include unmatched ttbar samples
         if include_unmatched and sample_type=='ttbar' and syst_type=='nominal':
-            tarballs_dict[tarball].append("{}_unmatched_truth{}".format(*os.path.splitext(sample_relpath)))
+            tarballs_dict[tarball].add("{}_unmatched_truth{}".format(*os.path.splitext(sample_relpath)))
 
     if check_exist:
         for tarball in tarballs_dict:
